@@ -46,7 +46,7 @@ class PageNavOverlay extends React.PureComponent {
   }
 
   onClick = () => {
-    this.textInput.current.focus();
+    this.textInput.current.select();
   }
 
   onChange = e => {
