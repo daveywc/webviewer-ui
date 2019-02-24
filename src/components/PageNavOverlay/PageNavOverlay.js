@@ -46,7 +46,7 @@ class PageNavOverlay extends React.PureComponent {
   }
 
   onClick = () => {
-    this.textInput.current.select();
+    this.textInput.current.focus();
   }
 
   onChange = e => {
@@ -77,6 +77,17 @@ class PageNavOverlay extends React.PureComponent {
     this.setState({ input: pageLabels[currentPage - 1] });
   }
 
+  // https://stackoverflow.com/a/51314780/10135
+  onMouseDown = e => {
+    const el = e.currentTarget;
+        if(document.activeElement !== el) {
+            setTimeout(() => {
+              // using setSelectionRange() rather than select() so that it works on mobile Safari
+              el.setSelectionRange(0, el.value.length)
+            }, 0);
+        }
+  }
+
   render() {
     const { isDisabled, isLeftPanelOpen, isLeftPanelDisabled, currentPage, totalPages } = this.props;
     if (isDisabled) {
@@ -87,7 +98,7 @@ class PageNavOverlay extends React.PureComponent {
     
     return (
       <div className={className} data-element="pageNavOverlay" onClick={this.onClick}>
-        <form onSubmit={this.onSubmit} onBlur={this.onBlur}>
+        <form onSubmit={this.onSubmit} onBlur={this.onBlur} onMouseDown={this.onMouseDown}>
           <input ref={this.textInput} type="text" value={this.state.input} onChange={this.onChange} />
           {this.state.isCustomPageLabels 
           ? ` (${currentPage}/${totalPages})`
