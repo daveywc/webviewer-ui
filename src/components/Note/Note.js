@@ -18,6 +18,7 @@ class Note extends React.PureComponent {
     annotation: PropTypes.object.isRequired,
     isNoteEditing: PropTypes.bool.isRequired,
     isNoteExpanded: PropTypes.bool.isRequired,
+    isAnnotationFocused: PropTypes.bool,
     setIsNoteEditing: PropTypes.func.isRequired,
     searchInput: PropTypes.string,
     isReadOnly: PropTypes.bool,
@@ -33,8 +34,10 @@ class Note extends React.PureComponent {
     this.state = {
       replies: props.annotation.getReplies(),
       isRootContentEditing: false,
-      isReplyFocused: false
+      isReplyFocused: false,
+      isEmpty: true
     };
+    this.containerRef = React.createRef();
   }
 
   componentDidMount() {
@@ -47,6 +50,7 @@ class Note extends React.PureComponent {
     const commentEditable = core.canModify(annotation) && !annotation.getContents();
     const noteBeingEdited = !prevProps.isNoteEditing && this.props.isNoteEditing;
     const noteCollapsed = prevProps.isNoteExpanded && !this.props.isNoteExpanded;
+    const annotationWasFocused = !prevProps.isAnnotationFocused && this.props.isAnnotationFocused;
 
     if (noteBeingEdited) {
       if (commentEditable) {
@@ -61,6 +65,10 @@ class Note extends React.PureComponent {
         isRootContentEditing: false,
         isReplyFocused: false
       });
+    }
+
+    if (annotationWasFocused) {
+      this.scrollIntoView();
     }
   }
 
@@ -99,6 +107,10 @@ class Note extends React.PureComponent {
     }
   }
 
+  scrollIntoView = () => {
+    this.containerRef.current.scrollIntoView();
+  }
+
   openRootEditing = () => {
     this.setState({ isRootContentEditing: true });
   }
@@ -109,6 +121,7 @@ class Note extends React.PureComponent {
   }
 
   onChange = () => {
+    this.setState({ isEmpty: this.replyTextarea.current.value.length === 0 });
     this.replyTextarea.current.style.height = '30px';
     this.replyTextarea.current.style.height = (this.replyTextarea.current.scrollHeight + 2) + 'px';
   }
@@ -133,6 +146,8 @@ class Note extends React.PureComponent {
 
   postReply = e => {
     e.preventDefault();
+
+    this.setState({ isEmpty: true });
 
     if (this.replyTextarea.current.value.trim().length > 0) {
       core.createAnnotationReply(this.props.annotation, this.replyTextarea.current.value);
@@ -205,7 +220,7 @@ class Note extends React.PureComponent {
     ].join(' ').trim();
 
     return (
-      <div className={className} onClick={this.onClickNote}>
+      <div ref={this.containerRef} className={className} onClick={this.onClickNote}>
         <NoteRoot
           annotation={annotation}
           contents={rootContents}
@@ -230,7 +245,7 @@ class Note extends React.PureComponent {
             />
           )}
           {!isReadOnly && !isReplyDisabled &&
-            <div className="add-reply" data-element="noteReply" onClick={e => e.stopPropagation()}>
+            <div className={isRootContentEditing ? 'replies hidden' : 'add-reply'} onClick={e => e.stopPropagation()}>
               <textarea
                 ref={this.replyTextarea}
                 onChange={this.onChange}
@@ -241,7 +256,7 @@ class Note extends React.PureComponent {
               />
               {isReplyFocused &&
                 <div className="buttons" onMouseDown={e => e.preventDefault()}>
-                  <button onMouseDown={this.postReply}>{t('action.reply')}</button>
+                  <button className={this.state.isEmpty ? 'disabled' : ''} onMouseDown={this.postReply}>{t('action.reply')}</button>
                   <button onMouseDown={this.onClickCancel}>{t('action.cancel')}</button>
                 </div>
               }
@@ -256,6 +271,7 @@ class Note extends React.PureComponent {
 const mapStateToProps = (state, ownProps) => ({
   isNoteExpanded: selectors.isNoteExpanded(state, ownProps.annotation.Id),
   isNoteEditing: selectors.isNoteEditing(state, ownProps.annotation.Id),
+  isAnnotationFocused: selectors.isAnnotationFocused(state, ownProps.annotation.Id),
   isReadOnly: selectors.isDocumentReadOnly(state),
   isReplyDisabled: selectors.isElementDisabled(state, 'noteReply')
 });
