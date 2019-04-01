@@ -7,8 +7,6 @@ import getClassName from 'helpers/getClassName';
 import selectors from 'selectors';
 import { isIOS } from 'helpers/device';
 
-import { isIOS } from 'helpers/device';
-
 import './PageNavOverlay.scss';
 
 class PageNavOverlay extends React.PureComponent {
