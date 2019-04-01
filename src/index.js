@@ -7,6 +7,7 @@ import i18next from 'i18next';
 import thunk from 'redux-thunk';
 
 import core from 'core';
+import actions from 'actions';
 
 import apis from 'src/apis';
 
@@ -88,13 +89,21 @@ if (window.CanvasRenderingContext2D) {
   if (state.advanced.preloadWorker && state.advanced.engineType === engineTypes.PDFNETJS) {
     if (state.document.pdfType !== 'wait') {
       getBackendPromise(state.document.pdfType).then(pdfType => {
-        window.CoreControls.initPDFWorkerTransports(pdfType, {}, null);
+        window.CoreControls.initPDFWorkerTransports(pdfType, {
+          workerLoadingProgress: percent => {
+            store.dispatch(actions.setWorkerLoadingProgress(percent));
+          }
+        }, null);
       });
     }
 
     if (state.document.officeType !== 'wait') {
       getBackendPromise(state.document.officeType).then(officeType => {
-        window.CoreControls.preloadOfficeWorker(officeType, {}, {});
+        window.CoreControls.preloadOfficeWorker(officeType, {
+          workerLoadingProgress: percent => {
+            store.dispatch(actions.setWorkerLoadingProgress(percent));
+          }
+        }, {});
       });
     }
   }
@@ -201,8 +210,8 @@ if (window.CanvasRenderingContext2D) {
           setLanguage: apis.setLanguage,
           setLayoutMode: apis.setLayoutMode,
           setNotesPanelSort: apis.setNotesPanelSort(store),
-          setMaxZoomLevel: apis.setMaxZoomLevel,
-          setMinZoomLevel: apis.setMinZoomLevel,
+          setMaxZoomLevel: apis.setMaxZoomLevel(store),
+          setMinZoomLevel: apis.setMinZoomLevel(store),
           setPrintQuality: apis.setPrintQuality(store),
           setReadOnly: apis.setReadOnly,
           setShowSideWindow: apis.setShowSideWindow(store),

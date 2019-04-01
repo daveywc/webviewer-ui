@@ -5,6 +5,7 @@ import { connect } from 'react-redux';
 import core from 'core';
 import getClassName from 'helpers/getClassName';
 import selectors from 'selectors';
+import { isIOS } from 'helpers/device';
 
 import { isIOS } from 'helpers/device';
 
@@ -60,7 +61,7 @@ class PageNavOverlay extends React.PureComponent {
       }, 0);
     } else {
       this.textInput.current.select();
-    }    
+    }
   }
 
   onChange = e => {
