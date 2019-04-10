@@ -63,7 +63,8 @@ class ZoomOverlay extends React.PureComponent {
 
   handleMouseDown = e => {
     const clickedOutside = this.dropdown.current && !this.dropdown.current.contains(e.target);
-    const clickedOnZoomIndicator = document.querySelector('.ToggleElementOverlay').contains(e.target);
+    const toggleElementOverlay = document.querySelector('.ToggleElementOverlay');
+    const clickedOnZoomIndicator = toggleElementOverlay && toggleElementOverlay.contains(e.target);
     if (clickedOutside && !clickedOnZoomIndicator) {
       this.props.closeElements(['zoomOverlay']);
     }
@@ -93,7 +94,9 @@ class ZoomOverlay extends React.PureComponent {
           />
         )}
         <div className="spacer" />
-        <ToolButton toolName="MarqueeZoomTool" label={t('tool.Marquee')} onClick={() => closeElements(['zoomOverlay'])} />
+        {
+          this.props.isMarqueeZoomToolDisabled ? false : <OverlayItem  onClick={() => closeElements(['zoomOverlay'])} buttonName={t('tool.Marquee')} />
+        }
       </div>
     );
   }
@@ -102,6 +105,7 @@ class ZoomOverlay extends React.PureComponent {
 const mapStateToProps = state => ({
   isDisabled: selectors.isElementDisabled(state, 'zoomOverlay'),
   isOpen: selectors.isElementOpen(state, 'zoomOverlay'),
+  isMarqueeZoomToolDisabled: selectors.isToolButtonDisabled(state, 'MarqueeZoomTool'),
   zoomList: selectors.getZoomList(state)
 });
 
