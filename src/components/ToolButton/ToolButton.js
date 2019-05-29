@@ -51,6 +51,9 @@ class ToolButton extends React.PureComponent {
     if (onClick) {
       onClick(isActive);
     }
+
+    // PDFTron suggested fix for some problems with FreeTextAnnotation in iOS
+    core.deselectAllAnnotations();
   }
 
   getToolButtonColor = () => {
