@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
+import onClickOutside from 'react-onclickoutside';
 
 import ActionButton from 'components/ActionButton';
 
@@ -53,6 +54,10 @@ class TextPopup extends React.PureComponent {
     core.getTool('TextSelect').off('selectionComplete', this.onSelectionComplete);
   }
 
+  handleClickOutside = () => {
+    this.props.closeElement('textPopup');
+  }
+
   onSelectionComplete = (e, startQuad, allQuads) => {
     const { isDisabled, openElement } = this.props;
     
@@ -83,16 +88,16 @@ class TextPopup extends React.PureComponent {
     const isCreateRedactionEnabled = core.isCreateRedactionEnabled();
     
     return (
-      <div className={className} data-element={'textPopup'} ref={this.popup} style={{ left, top }} onMouseDown={e => e.stopPropagation()}>
+      <div className={className} data-element={'textPopup'} ref={this.popup} style={{ left, top }}>
         <ActionButton dataElement="copyTextButton" title="action.copy" img="ic_copy_black_24px" onClick={this.onClickCopy} />
         {this.props.isAnnotationToolsEnabled &&
-          <React.Fragment>
+          <>
             <ActionButton dataElement="textHighlightToolButton" title="annotation.highlight" img="ic_annotation_highlight_black_24px" onClick={this.highlightText} />
             <ActionButton dataElement="textUnderlineToolButton" title="annotation.underline" img="ic_annotation_underline_black_24px" onClick={this.underlineText} />
             <ActionButton dataElement="textSquigglyToolButton" title="annotation.squiggly" img="ic_annotation_squiggly_black_24px" onClick={this.squigglyText} />
             <ActionButton dataElement="textStrikeoutToolButton" title="annotation.strikeout" img="ic_annotation_strikeout_black_24px" onClick={this.strikeoutText} />
             { isCreateRedactionEnabled && <ActionButton dataElement="textRedactToolButton" title="option.redaction.markForRedaction" img="ic_annotation_add_redact_black_24px" onClick={this.redactText} /> }
-          </React.Fragment>
+          </>
         }
       </div>
     );
@@ -112,4 +117,4 @@ const mapDispatchToProps = dispatch => ({
   closeElements: dataElements => dispatch(actions.closeElements(dataElements)),
 });
 
-export default connect(mapStateToProps, mapDispatchToProps)(TextPopup);
+export default connect(mapStateToProps, mapDispatchToProps)(onClickOutside(TextPopup));

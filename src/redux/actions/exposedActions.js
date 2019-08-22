@@ -137,7 +137,7 @@ export const setActiveLeftPanel = dataElement => (dispatch, getState) => {
       'notesPanel',
     ].join(', ');
     console.warn(
-      `${dataElement} is not recognized by the left panel. Please use one of the following options: ${panelDataElements}`
+      `${dataElement} is not recognized by the left panel. Please use one of the following options: ${panelDataElements}`,
     );
   }
 };
@@ -147,7 +147,7 @@ export const setSortStrategy = sortStrategy => ({
 });
 export const setSortNotesBy = sortStrategy => {
   console.warn(
-    'setSortNotesBy is deprecated, please use setSortStrategy instead'
+    'setSortNotesBy is deprecated, please use setSortStrategy instead',
   );
 
   return setSortStrategy(sortStrategy);
@@ -194,12 +194,12 @@ export const setZoomList = zoomList => dispatch => {
   const minZoomLevel = getMinZoomLevel();
   const maxZoomLevel = getMaxZoomLevel();
   const filteredZoomList = zoomList.filter(
-    zoom => zoom >= minZoomLevel && zoom <= maxZoomLevel
+    zoom => zoom >= minZoomLevel && zoom <= maxZoomLevel,
   );
 
   if (filteredZoomList.length !== zoomList.length) {
     const outOfRangeZooms = zoomList.filter(
-      zoom => !filteredZoomList.includes(zoom)
+      zoom => !filteredZoomList.includes(zoom),
     );
     console.warn(`
       ${outOfRangeZooms.join(', ')} are not allowed zoom levels in the UI. 
@@ -211,11 +211,11 @@ export const setZoomList = zoomList => dispatch => {
 
   dispatch({ type: 'SET_ZOOM_LIST', payload: { zoomList: filteredZoomList } });
 };
-export const updateTool = (toolName, properties) => ({
-  type: 'UPDATE_TOOL',
-  payload: { toolName, properties },
-});
 export const useEmbeddedPrint = (useEmbeddedPrint = true) => ({
   type: 'USE_EMBEDDED_PRINT',
   payload: { useEmbeddedPrint },
+});
+export const setMaxSignaturesCount = maxSignaturesCount => ({
+  type: 'SET_MAX_SIGNATURES_COUNT',
+  payload: { maxSignaturesCount },
 });
