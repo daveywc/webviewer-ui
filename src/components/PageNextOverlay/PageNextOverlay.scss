@@ -1,0 +1,29 @@
+@import '../../constants/styles';
+@import '../../constants/overlay';
+
+.PageNextOverlay {
+  @extend %overlay;
+  bottom: 4px;
+  right: 14px;
+  padding: 1px;
+  font-size: 10px;
+  float: right;
+  cursor: pointer;
+
+  @include mobile {
+    bottom: 5px;
+    right: 12px;
+    padding: 1px;
+    font-size: 8px;
+    z-index: 50;
+  }
+
+  &.open {
+    transition: opacity .3s ease, transform .3s ease, font-size .3s ease, padding .3s ease;
+  }
+
+  .Button {
+    min-width: 40px;
+    height: 40px;
+  }
+}
