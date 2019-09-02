@@ -44,9 +44,7 @@ class PageNextOverlay extends React.PureComponent {
       <div className={className} data-element="pageNextOverlay">
         <Button
           {...this.props}
-          // title={title}
-          className={className}
-          // isActive={isActive && isActive(this.props)}
+          title="Go to next page"
           img="ic_chevron_right_black_24px"
           onClick={this.onClick}
         />

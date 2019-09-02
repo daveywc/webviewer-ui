@@ -3,16 +3,16 @@
 
 .PageNextOverlay {
   @extend %overlay;
-  bottom: 4px;
-  right: 14px;
+  bottom: 10px;
+  right: 34px;
   padding: 1px;
   font-size: 10px;
   float: right;
   cursor: pointer;
 
   @include mobile {
-    bottom: 5px;
-    right: 12px;
+    bottom: 9px;
+    right: 32px;
     padding: 1px;
     font-size: 8px;
     z-index: 50;

@@ -44,9 +44,7 @@ class PagePreviousOverlay extends React.PureComponent {
       <div className={className} data-element="pagePreviousOverlay">
         <Button
           {...this.props}
-          // title={title}
-          className={className}
-          //isActive={isActive && isActive(this.props)}
+          title="Go to previous page"
           img="ic_chevron_left_black_24px"
           onClick={this.onClick}
         />
