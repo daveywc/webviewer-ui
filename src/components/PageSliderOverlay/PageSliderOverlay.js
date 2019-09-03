@@ -18,13 +18,12 @@ class PageSliderOverlay extends React.PureComponent {
 
   constructor(props) {
     super(props);
-    // this.sliderRef = React.createRef();
+    this.sliderRef = React.createRef();
   }
 
-  // componentDidUpdate() {
-  //   this.sliderRef.defaultValue = this.props.currentPage;
-  //   this.sliderRef.current.focus();
-  // }
+  componentDidUpdate() {
+    this.sliderRef.current.value = this.props.currentPage;
+  }
 
   handleChange = event => {
     core.setCurrentPage(event.target.value);
@@ -40,7 +39,7 @@ class PageSliderOverlay extends React.PureComponent {
     
     return (
       <div className={className} data-element="pageSliderOverlay">
-        <input type="range" /*ref={this.sliderRef}*/ key={currentPage} min="1" max={totalPages} defaultValue={currentPage} step="1" onChange={this.handleChange} />
+        <input type="range" ref={this.sliderRef} min="1" max={totalPages} defaultValue={currentPage} step="1" onChange={this.handleChange} />
       </div>
     );
   }

@@ -6,17 +6,17 @@
     bottom: 10px;
     left: 120px;
     padding: 9px;
-    width: 400px;
+    width: 40%;
     cursor: pointer;
     background:transparent;
     border: none;
 
     @include mobile {
       bottom: 9px;
-      left: 118px;
+      left: 75px;
       padding: 7px;
       z-index: 50;
-      width: 30%;
+      width: 40%;
     }
 
     input {
