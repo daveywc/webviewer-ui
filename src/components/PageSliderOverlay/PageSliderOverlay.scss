@@ -1,0 +1,52 @@
+@import '../../constants/styles';
+@import '../../constants/overlay';
+
+  .PageSliderOverlay {
+    @extend %overlay;
+    bottom: 10px;
+    left: 120px;
+    padding: 9px;
+    width: 400px;
+    cursor: pointer;
+    background:transparent;
+    border: none;
+
+    @include mobile {
+      bottom: 9px;
+      left: 118px;
+      padding: 7px;
+      z-index: 50;
+      width: 30%;
+    }
+
+    input {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 15px;
+      background:#d3d3d3;
+      outline: none;
+      opacity: 0.7;
+      -webkit-transition: .2s;
+      transition: opacity .2s;
+    }
+  
+    input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 25px;
+      height: 25px;
+      border-radius: 50%; 
+      background: #4CAF50;
+      opacity: 0.7;
+      cursor: pointer;
+    }
+    
+    input::-moz-range-thumb {
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      background: #4CAF50;
+      opacity: 0.7;
+      cursor: pointer;
+    }
+  }

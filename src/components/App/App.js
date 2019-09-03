@@ -34,6 +34,7 @@ import PrintHandler from 'components/PrintHandler';
 import ZoomOverlay from 'components/ZoomOverlay';
 import PagePreviousOverlay from 'components/PagePreviousOverlay';
 import PageNextOverlay from 'components/PageNextOverlay';
+import PageSliderOverlay from 'components/PageSliderOverlay';
 
 import defineReaderControlAPIs from 'src/apis';
 
@@ -79,6 +80,7 @@ const App = ({ removeEventHandlers }) => {
         <SignatureOverlay />
         <CursorOverlay />
         <PageNavOverlay />
+        <PageSliderOverlay />
         <PagePreviousOverlay />
         <PageNextOverlay />
         <ZoomOverlay />
