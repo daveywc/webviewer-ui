@@ -1,18 +1,14 @@
 import core from 'core';
 import actions from 'actions';
-import defaultTool from 'constants/defaultTool';
+import fireEvent from 'helpers/fireEvent';
 
-export default dispatch => (e, newTool, oldTool) => {
+export default dispatch => (newTool, oldTool) => {
   if (oldTool && oldTool.name === 'TextSelect') {
     core.clearSelection();
     dispatch(actions.closeElement('textPopup'));
   }
 
-  if (newTool && newTool.name === defaultTool) {
-    dispatch(actions.setActiveToolGroup(''));
-    dispatch(actions.closeElement('toolsOverlay'));
-  }
-
   dispatch(actions.setActiveToolNameAndStyle(newTool));
-  $(document).trigger('toolModeChanged', [newTool, oldTool]);
+
+  fireEvent('toolModeChanged', [newTool, oldTool]);
 };

@@ -1,121 +1,146 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import classNames from 'classnames';
 import { useSelector, useDispatch, shallowEqual } from 'react-redux';
 
 import LeftPanelTabs from 'components/LeftPanelTabs';
-import NotesPanel from 'components/NotesPanel';
 import ThumbnailsPanel from 'components/ThumbnailsPanel';
 import OutlinesPanel from 'components/OutlinesPanel';
+import BookmarksPanel from 'components/BookmarksPanel';
+import LayersPanel from 'components/LayersPanel';
+import NotesPanel from 'components/NotesPanel';
 import CustomElement from 'components/CustomElement';
+import ResizeBar from 'components/ResizeBar';
 import Icon from 'components/Icon';
 
-import { isTabletOrMobile, isIE, isIE11 } from 'helpers/device';
-import actions from 'actions';
 import selectors from 'selectors';
+import actions from 'actions';
+import useMedia from 'hooks/useMedia';
+
+import { motion, AnimatePresence } from "framer-motion";
 
 import './LeftPanel.scss';
 
 const LeftPanel = () => {
-  const [isDisabled, isOpen, activePanel, customPanels, leftPanelWidth] = useSelector(
+  const isMobile = useMedia(
+    // Media queries
+    ['(max-width: 640px)'],
+    [true],
+    // Default value
+    false,
+  );
+
+  const isTabletAndMobile = useMedia(
+    // Media queries
+    ['(max-width: 900px)'],
+    [true],
+    // Default value
+    false,
+  );
+
+  const [isOpen, isDisabled, activePanel, customPanels, currentWidth, notesInLeftPanel] = useSelector(
     state => [
-      selectors.isElementDisabled(state, 'leftPanel'),
       selectors.isElementOpen(state, 'leftPanel'),
+      selectors.isElementDisabled(state, 'leftPanel'),
       selectors.getActiveLeftPanel(state),
       selectors.getCustomPanels(state),
       selectors.getLeftPanelWidth(state),
+      selectors.getNotesInLeftPanel(state),
     ],
     shallowEqual,
   );
+
+  const minWidth = 264;
   const dispatch = useDispatch();
 
-  useEffect(() => {
-    if (isOpen && isTabletOrMobile()) {
-      dispatch(actions.closeElement('searchPanel'));
-    }
-  }, [dispatch, isOpen]);
+  const onDrop = e => {
+    // this is mainly for the thumbnail panel, to prevent the broswer from loading a document that dropped in
+    e.preventDefault();
+  };
+
+  const onDragOver = e => {
+    // when dragging over the "LeftPanel", change the cursor to "Move" from "Copy"
+    e.preventDefault();
+  };
 
   const getDisplay = panel => (panel === activePanel ? 'flex' : 'none');
-  // IE11 will use javascript for controlling width, other broswers will use CSS variables
-  const style = isIE11 && leftPanelWidth ? { width: leftPanelWidth } : { };
 
-  return isDisabled ? null : (
-    <div
-      className={classNames({
-        Panel: true,
-        LeftPanel: true,
-        open: isOpen,
-        closed: !isOpen,
-      })}
-      data-element="leftPanel"
-      style={style}
-    >
-      <div className="left-panel-header">
-        <div
-          className="close-btn hide-in-desktop"
-          onClick={() => dispatch(actions.closeElement('leftPanel'))}
+  let style = {};
+  if (!isMobile) {
+    style = { width: `${currentWidth}px`, minWidth: `${currentWidth}px` };
+  }
+
+  const isVisible = !(!isOpen || isDisabled);
+
+  let animate = { width: 'auto' };
+  if (isMobile) {
+    animate = { width: '100vw' };
+  }
+
+  return (
+    <AnimatePresence>
+      {isVisible && (
+        <motion.div
+          className={classNames({
+            Panel: true,
+            LeftPanel: true,
+          })}
+          onDrop={onDrop}
+          onDragOver={onDragOver}
+          data-element="leftPanel"
+          initial={{ width: '0px' }}
+          animate={animate}
+          exit={{ width: '0px' }}
+          transition={{ ease: "easeOut", duration: 0.25 }}
         >
-          <Icon glyph="ic_close_black_24px" />
-        </div>
-        <LeftPanelTabs />
-      </div>
-
-      <ResizeBar />
-
-      <NotesPanel display={getDisplay('notesPanel')} />
-      <ThumbnailsPanel display={getDisplay('thumbnailsPanel')} />
-      <OutlinesPanel display={getDisplay('outlinesPanel')} />
-      {customPanels.map(({ panel }, index) => (
-        <CustomElement
-          key={panel.dataElement || index}
-          className={`Panel ${panel.dataElement}`}
-          display={getDisplay(panel.dataElement)}
-          dataElement={panel.dataElement}
-          render={panel.render}
-        />
-      ))}
-    </div>
+          <div
+            className="left-panel-container"
+            style={style}
+          >
+            {isMobile &&
+              <div
+                className="close-container"
+              >
+                <div
+                  className="close-icon-container"
+                  onClick={() => {
+                    dispatch(actions.closeElements(['leftPanel']));
+                  }}
+                >
+                  <Icon
+                    glyph="ic_close_black_24px"
+                    className="close-icon"
+                  />
+                </div>
+              </div>}
+            <div className="left-panel-header">
+              <LeftPanelTabs />
+            </div>
+            {activePanel === 'thumbnailsPanel' && <ThumbnailsPanel/>}
+            {activePanel === 'outlinesPanel' && <OutlinesPanel />}
+            {activePanel === 'bookmarksPanel' && <BookmarksPanel />}
+            {activePanel === 'layersPanel' && <LayersPanel />}
+            {notesInLeftPanel && activePanel === 'notesPanel' && <NotesPanel currentLeftPanelWidth={currentWidth} />}
+            {customPanels.map(({ panel }, index) => (
+              <CustomElement
+                key={panel.dataElement || index}
+                className={`Panel ${panel.dataElement}`}
+                display={getDisplay(panel.dataElement)}
+                dataElement={panel.dataElement}
+                render={panel.render}
+              />
+            ))}
+          </div>
+          {!isTabletAndMobile &&
+            <ResizeBar
+              minWidth={minWidth}
+              onResize={_width => {
+                dispatch(actions.setLeftPanelWidth(_width));
+              }}
+            />}
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 
 export default LeftPanel;
-
-const ResizeBar = () => {
-  const isMouseDownRef = useRef(false);
-  const dispatch = useDispatch();
-
-  useEffect(() => {
-    // this listener is throttled because the notes panel listens to the panel width
-    // change in order to rerender to have the correct width and we don't want
-    // it to rerender too often
-    const dragMouseMove = _.throttle(({ clientX }) => {
-      if (isMouseDownRef.current && clientX > 215 && clientX < 900) {
-        // we are using css variables to make the panel resizable but IE11 doesn't support it
-        if (isIE) {
-          dispatch(actions.setLeftPanelWidth(clientX));
-        }
-        document.body.style.setProperty('--left-panel-width', `${clientX}px`);
-      }
-    }, 50);
-
-    document.addEventListener('mousemove', dragMouseMove);
-    return () => document.removeEventListener('mousemove', dragMouseMove);
-  }, []);
-
-  useEffect(() => {
-    const finishDrag = () => {
-      isMouseDownRef.current = false;
-    };
-
-    document.addEventListener('mouseup', finishDrag);
-    return () => document.removeEventListener('mouseup', finishDrag);
-  }, []);
-
-  return (
-    <div
-      className="resize-bar"
-      onMouseDown={() => {
-        isMouseDownRef.current = true;
-      }}
-    />
-  );
-};

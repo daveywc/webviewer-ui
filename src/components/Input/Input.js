@@ -1,44 +1,59 @@
 import React from 'react';
+import { useSelector } from 'react-redux';
 import PropTypes from 'prop-types';
+import Icon from 'components/Icon';
 
 import './Input.scss';
 
-class Input extends React.PureComponent {
-  static propTypes = {
-    id: PropTypes.string.isRequired,
-    type: PropTypes.string.isRequired,
-    name: PropTypes.string,
-    defaultChecked: PropTypes.bool,
-    onChange: PropTypes.func,
-    label: PropTypes.oneOfType([
-      PropTypes.string,
-      PropTypes.object,
-    ]).isRequired,
-  }
+import selectors from 'selectors';
 
-  constructor() {
-    super();
-    this.inputRef = React.createRef();
-  }
+const propTypes = {
+  id: PropTypes.string.isRequired,
+  type: PropTypes.string.isRequired,
+  name: PropTypes.string,
+  defaultChecked: PropTypes.bool,
+  onChange: PropTypes.func,
+  label: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.object,
+  ]).isRequired,
+  checked: PropTypes.bool,
+  disabled: PropTypes.bool,
+  dataElement: PropTypes.string.isRequired,
+};
 
-  get checked() {
-    return this.inputRef.current.checked;
-  }
+const Input = React.forwardRef((props, ref) => {
+  const isDisabled = useSelector(state => selectors.isElementDisabled(state, props.dataElement));
 
-  set checked(value) {
-    this.inputRef.current.checked = value;
-  }
+  const inputProps = omit(props, ['dataElement', 'label']);
 
-  render() {
-    const { id, type, name, defaultChecked, onChange, label } = this.props;
+  return isDisabled ? null : (
+    <React.Fragment>
+      <input className="Input" ref={ref} {...inputProps}/>
+      <label className="Input" htmlFor={props.id} data-element={props.dataElement}>{props.label}
+        {ref?.current?.checked &&
+          <div
+            className="icon-container"
+          >
+            <Icon
+              glyph="icon-menu-checkmark"
+            />
+          </div>}
+      </label>
+    </React.Fragment>
+  );
+});
 
-    return (
-      <>
-        <input className="Input" id={id} ref={this.inputRef} type={type} name={name} onChange={onChange} defaultChecked={defaultChecked} />
-        <label className="Input" htmlFor={id}>{label}</label>
-      </>
-    );
-  }
-}
+const omit = (obj, keysToOmit) => {
+  return Object.keys(obj).reduce((result, key) => {
+    if (!keysToOmit.includes(key)) {
+      result[key] = obj[key];
+    }
+
+    return result;
+  }, {});
+};
+
+Input.propTypes = propTypes;
 
 export default Input;

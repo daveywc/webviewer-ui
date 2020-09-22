@@ -1,11 +1,11 @@
 import core from 'core';
 import defaultTool from 'constants/defaultTool';
-import actions from 'actions';
 
-export default dispatch => (e, signatureAnnotation) => {
+export default () => signatureAnnotation => {
   core.setToolMode(defaultTool);
-  dispatch(actions.closeElement('cursorOverlay'));
-  setTimeout(() => {
-    core.selectAnnotation(signatureAnnotation);
-  }, 0);
+  core.getTool('AnnotationCreateSignature').hidePreview();
+  core.selectAnnotation(signatureAnnotation);
+  const signatureTool = core.getTool('AnnotationCreateSignature');
+
+  signatureTool.annot = null;
 };

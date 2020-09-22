@@ -2,53 +2,56 @@ import { saveAs } from 'file-saver';
 
 import core from 'core';
 import { isIE } from 'helpers/device';
+import fireEvent from 'helpers/fireEvent';
 import actions from 'actions';
 
-export default (dispatch, options) => {
-  const { documentPath = 'document', filename, includeAnnotations = true, xfdfData, externalURL } = options;
+export default (dispatch, options = {}) => {
+  const {
+    filename = core.getDocument()?.getFilename() || 'document',
+    includeAnnotations = true,
+    externalURL,
+    useDisplayAuthor = false,
+  } = options;
 
-  return new Promise(resolve => {
-    const downloadOptions = { downloadType: 'pdf' };
-    let file;
+  if (!options.downloadType) {
+    options.downloadType = 'pdf';
+  }
 
-    const freeHandCompletePromise = core.getTool('AnnotationCreateFreeHand').complete();
+  dispatch(actions.openElement('loadingModal'));
 
-    const annotationsPromise = includeAnnotations ? core.getAnnotationsLoadedPromise() : Promise.resolve();
-    Promise.all([annotationsPromise, freeHandCompletePromise]).then(() => {
-      if (includeAnnotations) {
-        downloadOptions.xfdfString = xfdfData || core.exportAnnotations();
+  const annotationsPromise = (includeAnnotations && !options.xfdfString) ? core.exportAnnotations({ useDisplayAuthor }) : Promise.resolve('<xfdf></xfdf>');
+
+  return annotationsPromise.then(xfdfString => {
+    options.xfdfString = options.xfdfString || xfdfString;
+
+    const getDownloadFilename = (name, extension) => {
+      if (name.slice(-extension.length).toLowerCase() !== extension) {
+        name += extension;
       }
+      return name;
+    };
 
-      const getDownloadFilename = (name, extension) => {
-        if (name && name.slice(-extension.length).toLowerCase() !== extension) {
-          name += extension;
-        }
-        return name;
-      };
+    const downloadName = getDownloadFilename(filename, '.pdf');
+    const doc = core.getDocument();
 
-      dispatch(actions.openElement('loadingModal'));
-
-      const name = filename || documentPath.split('/').slice(-1)[0];
-      const downloadName = getDownloadFilename(name, '.pdf');
-
-      const doc = core.getDocument();
-      const bbURLPromise = externalURL ? Promise.resolve({ url: externalURL }) : doc.getDownloadLink({ filename: downloadName });
-
-      if (bbURLPromise) {
-        const downloadIframe = document.getElementById('download-iframe') || document.createElement('iframe');
-        downloadIframe.width = 0;
-        downloadIframe.height = 0;
-        downloadIframe.id = 'download-iframe';
-        downloadIframe.src = null;
-        document.body.appendChild(downloadIframe);
-        bbURLPromise.then(result => {
-          downloadIframe.src = result.url;
-          dispatch(actions.closeElement('loadingModal'));
-          $(document).trigger('finishedSavingPDF');
-        });
-      } else {
-        doc.getFileData(downloadOptions).then(data => {
+    if (externalURL) {
+      const downloadIframe =
+        document.getElementById('download-iframe') ||
+        document.createElement('iframe');
+      downloadIframe.width = 0;
+      downloadIframe.height = 0;
+      downloadIframe.id = 'download-iframe';
+      downloadIframe.src = null;
+      document.body.appendChild(downloadIframe);
+      downloadIframe.src = externalURL;
+      dispatch(actions.closeElement('loadingModal'));
+      fireEvent('finishedSavingPDF');
+    } else {
+      return doc.getFileData(options).then(
+        data => {
           const arr = new Uint8Array(data);
+          let file;
+
           if (isIE) {
             file = new Blob([arr], { type: 'application/pdf' });
           } else {
@@ -57,13 +60,15 @@ export default (dispatch, options) => {
 
           saveAs(file, downloadName);
           dispatch(actions.closeElement('loadingModal'));
-          $(document).trigger('finishedSavingPDF');
-          resolve();
-        }, error => {
+          fireEvent('finishedSavingPDF');
+        },
+        error => {
           dispatch(actions.closeElement('loadingModal'));
           throw new Error(error.message);
-        });
-      }
-    });
+        },
+      );
+    }
+  }).catch(() => {
+    dispatch(actions.closeElement('loadingModal'));
   });
 };

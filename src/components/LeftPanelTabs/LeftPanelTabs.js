@@ -28,6 +28,7 @@ class LeftPanelTabs extends React.Component {
       customPanels,
       isLeftPanelTabsDisabled,
       setActiveLeftPanel,
+      notesInLeftPanel,
     } = this.props;
 
     if (isLeftPanelTabsDisabled) {
@@ -39,35 +40,52 @@ class LeftPanelTabs extends React.Component {
         <Button
           isActive={this.isActive('thumbnailsPanel')}
           dataElement="thumbnailsPanelButton"
-          img="ic_thumbnails_black_24px"
+          img="icon-panel-thumbnail-line"
           onClick={() => setActiveLeftPanel('thumbnailsPanel')}
           title="component.thumbnailsPanel"
         />
         <Button
           isActive={this.isActive('outlinesPanel')}
           dataElement="outlinesPanelButton"
-          img="ic_outline_black_24px"
+          img="icon-panel-outlines"
           onClick={() => setActiveLeftPanel('outlinesPanel')}
           title="component.outlinesPanel"
         />
         <Button
-          isActive={this.isActive('notesPanel')}
-          dataElement="notesPanelButton"
-          img="ic_annotations_black_24px"
-          onClick={() => setActiveLeftPanel('notesPanel')}
-          title="component.notesPanel"
+          isActive={this.isActive('layersPanel')}
+          dataElement="layersPanelButton"
+          img="ic_layers_24px"
+          onClick={() => setActiveLeftPanel('layersPanel')}
+          title="component.layersPanel"
         />
-
-        {customPanels.map(({ panel, tab }, index) => (
+        <Button
+          isActive={this.isActive('bookmarksPanel')}
+          dataElement="bookmarksPanelButton"
+          img="ic_bookmarks_black_24px"
+          onClick={() => setActiveLeftPanel('bookmarksPanel')}
+          title="component.bookmarksPanel"
+        />
+        {notesInLeftPanel &&
           <Button
-            key={tab.dataElement || index}
-            isActive={this.isActive(panel.dataElement)}
-            dataElement={tab.dataElement}
-            img={tab.img}
-            onClick={() => setActiveLeftPanel(panel.dataElement)}
-            title={tab.title}
-          />
-        ))}
+            isActive={this.isActive('notesPanel')}
+            dataElement="notesPanelButton"
+            img="icon-header-chat-line"
+            onClick={() => setActiveLeftPanel('notesPanel')}
+            title="component.notesPanel"
+          />}
+        {customPanels.map(({ panel, tab }, index) =>
+          <React.Fragment key={index}>
+            <Button
+              key={tab.dataElement || index}
+              isActive={this.isActive(panel.dataElement)}
+              dataElement={tab.dataElement}
+              img={tab.img}
+              onClick={() => setActiveLeftPanel(panel.dataElement)}
+              title={tab.title}
+            />
+            {index < customPanels.length - 1 && <div className="divider" />}
+          </React.Fragment>,
+        )}
       </Element>
     );
   }
@@ -78,6 +96,7 @@ const mapStateToProps = state => ({
   customPanels: selectors.getCustomPanels(state),
   disabledCustomPanelTabs: selectors.getDisabledCustomPanelTabs(state),
   isLeftPanelTabsDisabled: selectors.isElementDisabled(state, 'leftPanelTabs'),
+  notesInLeftPanel: selectors.getNotesInLeftPanel(state),
 });
 
 const mapDispatchToProps = {

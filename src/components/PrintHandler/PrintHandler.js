@@ -1,36 +1,48 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import { connect } from 'react-redux';
+import React, { useState, useEffect } from 'react';
+import { useSelector, shallowEqual } from 'react-redux';
+import classNames from 'classnames';
 
+import core from 'core';
+import { workerTypes } from 'constants/types';
+import { isIOS } from 'helpers/device';
 import selectors from 'selectors';
 
 import './PrintHandler.scss';
 
-class PrintHandler extends React.PureComponent {
-  static propTypes = {
-    isDisabled: PropTypes.bool,
-    isEmbedPrintSupported: PropTypes.bool,
-  }
+const PrintHandler = () => {
+  const [isDisabled, isEmbedPrintSupported] = useSelector(
+    state => [
+      selectors.isElementDisabled(state, 'printHandler'),
+      selectors.isEmbedPrintSupported(state),
+    ],
+    shallowEqual,
+  );
+  const [documentType, setDocumentType] = useState('');
 
-  render() {
-    if (this.props.isDisabled) {
-      return null;
-    }
+  useEffect(() => {
+    const onDocumentLoaded = () => {
+      const type = core.getDocument().getType();
+      setDocumentType(type);
+    };
 
-    return (
-      <div className="PrintHandler">
-        {this.props.isEmbedPrintSupported
-          ? <iframe id="print-handler"></iframe>
-          : <div id="print-handler"></div>
-        }
-      </div>
-    );
-  }
-}
+    core.addEventListener('documentLoaded', onDocumentLoaded);
+    return () => core.removeEventListener('documentLoaded', onDocumentLoaded);
+  });
 
-const mapStateToProps = state => ({
-  isDisabled: selectors.isElementDisabled(state, 'printHandler'),
-  isEmbedPrintSupported: selectors.isEmbedPrintSupported(state),
-});
+  return isDisabled ? null : (
+    <div
+      className={classNames({
+        PrintHandler,
+        'ios-print': isIOS,
+      })}
+    >
+      {isEmbedPrintSupported && documentType === workerTypes.PDF ? (
+        <iframe id="print-handler" tabIndex={-1}></iframe>
+      ) : (
+        <div id="print-handler"></div>
+      )}
+    </div>
+  );
+};
 
-export default connect(mapStateToProps)(PrintHandler);
+export default PrintHandler;

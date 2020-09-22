@@ -1,71 +1,44 @@
 import React from 'react';
-import PropTypes from 'prop-types';
-import { connect } from 'react-redux';
+import { useSelector, useDispatch, shallowEqual } from 'react-redux';
 
-import core from 'core';
-import { supportedPDFExtensions, supportedOfficeExtensions } from 'constants/supportedFiles';
+import getHashParams from 'helpers/getHashParams';
 import loadDocument from 'helpers/loadDocument';
 import actions from 'actions';
 import selectors from 'selectors';
 
 import './FilePickerHandler.scss';
 
-class FilePickerHandler extends React.PureComponent {
-  static propTypes = {
-    document: PropTypes.object.isRequired,
-    advanced: PropTypes.object.isRequired,
-    isDisabled: PropTypes.bool,
-    dispatch: PropTypes.func.isRequired,
-    setDocumentFile: PropTypes.func.isRequired,
-    openElement: PropTypes.func.isRequired,
-    closeElement: PropTypes.func.isRequired,
-  }
+const FilePickerHandler = () => {
+  const isDisabled = useSelector(
+    state => selectors.isElementDisabled(state, 'filePickerHandler'),
+    shallowEqual,
+  );
+  const dispatch = useDispatch();
 
-  constructor() {
-    super();
-    this.accepted = [
-      supportedPDFExtensions.map(extension => `.${extension}`),
-      supportedOfficeExtensions.map(extension => `.${extension}`),
-      '.xod',
-    ].join(', ');
-  }
-
-  openDocument = e => {
+  const openDocument = e => {
     const file = e.target.files[0];
     if (file) {
-      this.props.setDocumentFile(file);
-      this.props.openElement('progressModal');
-      this.props.closeElement('menuOverlay');
-      core.closeDocument(this.props.dispatch).then(() => {
-        loadDocument({ document: this.props.document, advanced: this.props.advanced }, this.props.dispatch);
-      });
+      dispatch(actions.openElement('progressModal'));
+      dispatch(actions.closeElement('menuOverlay'));
+      loadDocument(dispatch, file);
     }
-  }
+  };
 
-  render() {
-    if (this.props.isDisabled) {
-      return null;
-    }
+  const pdftronServer = !!getHashParams('pdftronServer', null);
+  const acceptFormats = pdftronServer ? window.CoreControls.SupportedFileFormats.SERVER : window.CoreControls.SupportedFileFormats.CLIENT;
 
-    return (
-      <div className="FilePickerHandler">
-        <input id="file-picker" type="file" accept={this.accepted} onChange={this.openDocument} />
-      </div>
-    );
-  }
-}
+  return isDisabled ? null : (
+    <div className="FilePickerHandler">
+      <input
+        id="file-picker"
+        type="file"
+        accept={acceptFormats.map(
+          format => `.${format}`,
+        ).join(', ')}
+        onChange={openDocument}
+      />
+    </div>
+  );
+};
 
-const mapStateToProps = state => ({
-  document: selectors.getDocument(state),
-  advanced: selectors.getAdvanced(state),
-  isDisabled: selectors.isElementDisabled(state, 'filePickerHandler'),
-});
-
-const mapDispatchToProps = dispatch => ({
-  dispatch,
-  setDocumentFile: documentFile => dispatch(actions.setDocumentFile(documentFile)),
-  openElement: dataElement => dispatch(actions.openElement(dataElement)),
-  closeElement: dataElement => dispatch(actions.closeElement(dataElement)),
-});
-
-export default connect(mapStateToProps, mapDispatchToProps)(FilePickerHandler);
+export default FilePickerHandler;

@@ -1,65 +1,78 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import { connect } from 'react-redux';
+import React, { useEffect, useRef } from "react";
+import classNames from "classnames";
+import { useSelector, useDispatch, shallowEqual } from "react-redux";
+import actions from "actions";
+import selectors from "selectors";
 
-import getClassName from 'helpers/getClassName';
-import actions from 'actions';
-import selectors from 'selectors';
+import "./ProgressModal.scss";
 
-import './ProgressModal.scss';
+const ProgressModal = () => {
+  const [isDisabled, isOpen, loadingProgress] = useSelector(
+    state => [
+      selectors.isElementDisabled(state, "progressModal"),
+      selectors.isElementOpen(state, "progressModal"),
+      selectors.getLoadingProgress(state),
+    ],
+    shallowEqual,
+  );
+  const dispatch = useDispatch();
+  const progressCircle = useRef(null);
 
-class ProgressModal extends React.PureComponent {
-  static propTypes = {
-    isDisabled: PropTypes.bool,
-    isOpen: PropTypes.bool,
-    closeElements: PropTypes.func.isRequired,
-    loadingProgress: PropTypes.number,
-    isUploading: PropTypes.bool,
-    uploadProgress: PropTypes.number,
-  }
-
-  componentDidUpdate(prevProps) {
-    if (!prevProps.isOpen && this.props.isOpen) {
-      this.props.closeElements(['signatureModal', 'printModal', 'errorModal', 'loadingModal']);
+  useEffect(() => {
+    if (isOpen) {
+      dispatch(
+        actions.closeElements([
+          "signatureModal",
+          "printModal",
+          "errorModal",
+          "loadingModal",
+          "passwordModal",
+        ]),
+      );
     }
-  }
+  }, [dispatch, isOpen]);
 
-  render() {
-    const { isDisabled, loadingProgress, isUploading, uploadProgress } = this.props;
-    if (this.props.isDisabled) {
-      return null;
+  useEffect(() => {
+    const circle = progressCircle.current;
+
+    if (circle) {
+      const radius = circle.r.baseVal.value;
+      const circumference = radius * 2 * Math.PI;
+      const offset = circumference - loadingProgress * circumference;
+      circle.style.strokeDasharray = `${circumference} ${circumference}`;
+      circle.style.strokeDashoffset = offset;
     }
+  }, [loadingProgress]);
 
-    if (isDisabled) {
-      return null;
-    }
-
-    const progressToUse = isUploading ? uploadProgress : loadingProgress;
-    const className = getClassName('Modal ProgressModal', this.props);
-
-    return (
-      <div className={className} data-element="progressModal">
-        <div className="container">
-          <div className="progress-bar-wrapper">
-            <div className="progress-bar" style={{ transform: `translateX(${-(1 - progressToUse) * 100}%`, transition: progressToUse ? 'transform 0.5s ease' : 'none' }}>
-            </div>
-          </div>
-        </div>
+  return isDisabled ? null : (
+    <div
+      className={classNames({
+        Modal: true,
+        ProgressModal: true,
+        open: isOpen,
+        closed: !isOpen,
+      })}
+      data-element="progressModal"
+    >
+      <div className="container">
+        <svg className="progress-ring" width="54" height="54">
+          <circle
+            className="progress-ring__fill"
+            r="25"
+            cx="27"
+            cy="27"
+          />
+          <circle
+            ref={progressCircle}
+            className="progress-ring__circle"
+            r="25"
+            cx="27"
+            cy="27"
+          />
+        </svg>
       </div>
-    );
-  }
-}
-
-const mapStateToProps = state => ({
-  isDisabled: selectors.isElementDisabled(state, 'progressModal'),
-  isOpen: selectors.isElementOpen(state, 'progressModal'),
-  loadingProgress: selectors.getLoadingProgress(state),
-  isUploading: selectors.isUploading(state),
-  uploadProgress: selectors.getUploadProgress(state),
-});
-
-const mapDispatchToProps = {
-  closeElements: actions.closeElements,
+    </div>
+  );
 };
 
-export default connect(mapStateToProps, mapDispatchToProps)(ProgressModal);
+export default ProgressModal;

@@ -1,9 +1,20 @@
 import getFilteredDataElements from 'helpers/getFilteredDataElements';
 import { isIOS, isAndroid } from 'helpers/device';
+import fireEvent from 'helpers/fireEvent';
 import selectors from 'selectors';
 import core from 'core';
 
 // viewer
+/**
+ * Remove an element from DOM
+ * @ignore
+ * @param {string} dataElement the value of the data-element attribute of the element
+ * @param {number} priority a value that indicates how specific this element is disabled.
+ * If a element is disabled with priority 3, then calling enableElement with priority 2 won't enable it back because the element is disabled in a more specific manner.
+ * This priority argument is used by external APIs such as instance.disableElements and instance.disableFeatures(...)
+ * For example, instance.disableElements has priority 3 and instance.enableFeatures has priority 1.
+ * So calling instance.enableFeatures([instance.Feature.NotesPanel]) won't enable the notes panel if it's disabled by instance.disableElements(['notesPanel'])
+ */
 export const disableElement = (dataElement, priority) => (
   dispatch,
   getState,
@@ -79,6 +90,31 @@ export const enableElements = (dataElements, priority) => (
     payload: { dataElements: filteredDataElements, priority },
   });
 };
+export const setThumbnailMerging = (useThumbnailMerging = true) => ({
+  type: 'SET_THUMBNAIL_MERGING',
+  payload: { useThumbnailMerging },
+});
+
+export const setThumbnailReordering = (useThumbnailReordering = true) => ({
+  type: 'SET_THUMBNAIL_REORDERING',
+  payload: { useThumbnailReordering },
+});
+export const setThumbnailMultiselect = (useThumbnailMultiselect = true) => ({
+  type: 'SET_THUMBNAIL_MULTISELECT',
+  payload: { useThumbnailMultiselect },
+});
+export const setIsMultipleViewerMerging = (isMultipleViewerMerging = false) => ({
+  type: 'SET_MULTI_VIEWER_MERGING',
+  payload: { isMultipleViewerMerging },
+});
+export const setAllowPageNavigation = (allowPageNavigation = true) => ({
+  type: 'SET_ALLOW_PAGE_NAVIGATION',
+  payload: { allowPageNavigation },
+});
+export const setLastPickedToolForGroup = (group, toolName) => ({
+  type: 'SET_LAST_PICKED_TOOL_FOR_GROUP',
+  payload: { group, toolName },
+});
 export const setActiveToolNameAndStyle = toolObject => (dispatch, getState) => {
   const state = getState();
   let name;
@@ -95,6 +131,7 @@ export const setActiveToolNameAndStyle = toolObject => (dispatch, getState) => {
   if (state.viewer.activeToolName === name) {
     return;
   }
+
   dispatch({
     type: 'SET_ACTIVE_TOOL_NAME_AND_STYLES',
     payload: { toolName: name, toolStyles: toolObject.defaults || {} },
@@ -104,10 +141,19 @@ export const setActiveToolStyles = (toolStyles = {}) => ({
   type: 'SET_ACTIVE_TOOL_STYLES',
   payload: { toolStyles },
 });
-export const setActiveToolGroup = toolGroup => ({
-  type: 'SET_ACTIVE_TOOL_GROUP',
-  payload: { toolGroup },
-});
+export const setActiveToolGroup = toolGroup => (dispatch, getState) => {
+  const currentActiveToolGroup = selectors.getActiveToolGroup(getState());
+  const toolbarGroup = selectors.getCurrentToolbarGroup(getState());
+
+  if (currentActiveToolGroup === toolGroup) {
+    return;
+  }
+
+  dispatch({
+    type: 'SET_ACTIVE_TOOL_GROUP',
+    payload: { toolGroup, toolbarGroup },
+  });
+};
 export const setNotePopupId = id => ({
   type: 'SET_NOTE_POPUP_ID',
   payload: { id },
@@ -141,10 +187,6 @@ export const setFullScreen = isFullScreen => ({
   type: 'SET_FULL_SCREEN',
   payload: { isFullScreen },
 });
-export const setDocumentLoaded = isDocumentLoaded => ({
-  type: 'SET_DOCUMENT_LOADED',
-  payload: { isDocumentLoaded },
-});
 export const setReadOnly = isReadOnly => ({
   type: 'SET_READ_ONLY',
   payload: { isReadOnly },
@@ -161,19 +203,23 @@ export const setToolButtonObjects = toolButtonObjects => ({
   type: 'SET_TOOL_BUTTON_OBJECTS',
   payload: { toolButtonObjects },
 });
-export const setIsNoteEditing = isNoteEditing => (dispatch, getState) => {
-  const state = getState();
-
-  if (state.viewer.isNoteEditing !== isNoteEditing) {
-    dispatch({ type: 'SET_IS_NOTE_EDITING', payload: { isNoteEditing } });
-  }
-};
 export const setHeaderItems = (header, headerItems) => ({
   type: 'SET_HEADER_ITEMS',
   payload: { header, headerItems },
 });
+export const setPopupItems = (dataElement, items) => ({
+  type: 'SET_POPUP_ITEMS',
+  payload: {
+    dataElement,
+    items,
+  },
+});
 export const setColorPalette = (colorMapKey, colorPalette) => ({
   type: 'SET_COLOR_PALETTE',
+  payload: { colorMapKey, colorPalette },
+});
+export const setActivePalette = (colorMapKey, colorPalette) => ({
+  type: 'SET_ACTIVE_PALETTE',
   payload: { colorMapKey, colorPalette },
 });
 export const setIconColor = (colorMapKey, color) => ({
@@ -188,36 +234,20 @@ export const setLeftPanelWidth = width => ({
   type: 'SET_LEFT_PANEL_WIDTH',
   payload: { width },
 });
+export const disableReplyForAnnotations = func => ({
+  type: 'SET_REPLY_DISABLED_FUNC',
+  payload: { func },
+});
+export const setMouseWheelZoom = (enableMouseWheelZoom = true) => ({
+  type: 'SET_MOUSE_WHEEL_ZOOM',
+  payload: { enableMouseWheelZoom },
+});
+export const setReaderMode = isReaderMode => ({
+  type: 'SET_READER_MODE',
+  payload: { isReaderMode },
+});
 
 // document
-export const setDocumentId = documentId => ({
-  type: 'SET_DOCUMENT_ID',
-  payload: { documentId },
-});
-export const setDocumentPath = documentPath => ({
-  type: 'SET_DOCUMENT_PATH',
-  payload: { documentPath },
-});
-export const setDocumentFile = documentFile => ({
-  type: 'SET_DOCUMENT_FILE',
-  payload: { documentFile },
-});
-export const setDocumentType = type => ({
-  type: 'SET_DOCUMENT_TYPE',
-  payload: { type },
-});
-export const setPDFDoc = pdfDoc => ({
-  type: 'SET_PDF_DOC',
-  payload: { pdfDoc },
-});
-export const setFilename = filename => ({
-  type: 'SET_FILENAME',
-  payload: { filename },
-});
-export const setExtension = extension => ({
-  type: 'SET_EXTENSION',
-  payload: { extension },
-});
 export const setTotalPages = totalPages => ({
   type: 'SET_TOTAL_PAGES',
   payload: { totalPages },
@@ -226,9 +256,38 @@ export const setOutlines = outlines => ({
   type: 'SET_OUTLINES',
   payload: { outlines },
 });
-export const setCheckPasswordFunction = func => ({
-  type: 'SET_CHECKPASSWORD',
-  payload: { func },
+export const setBookmarks = bookmarks => ({
+  type: 'SET_BOOKMARKS',
+  payload: { bookmarks },
+});
+export const addBookmark = (pageIndex, text) => (dispatch, getState) => {
+  dispatch({
+    type: 'ADD_BOOKMARK',
+    payload: { pageIndex, text },
+  });
+
+  const bookmarks = selectors.getBookmarks(getState());
+  fireEvent('userBookmarksChanged', bookmarks);
+};
+export const editBookmark = (pageIndex, text) => (dispatch, getState) => {
+  dispatch({
+    type: 'EDIT_BOOKMARK',
+    payload: { pageIndex, text },
+  });
+  const bookmarks = selectors.getBookmarks(getState());
+  fireEvent('userBookmarksChanged', bookmarks);
+};
+export const removeBookmark = pageIndex => (dispatch, getState) => {
+  dispatch({
+    type: 'REMOVE_BOOKMARK',
+    payload: { pageIndex },
+  });
+  const bookmarks = selectors.getBookmarks(getState());
+  fireEvent('userBookmarksChanged', bookmarks);
+};
+export const setLayers = layers => ({
+  type: 'SET_LAYERS',
+  payload: { layers },
 });
 export const setPasswordAttempts = attempt => ({
   type: 'SET_PASSWORD_ATTEMPTS',
@@ -238,33 +297,14 @@ export const setPrintQuality = quality => ({
   type: 'SET_PRINT_QUALITY',
   payload: { quality },
 });
-export const setDocumentLoadingProgress = documentLoadingProgress => ({
-  type: 'SET_DOCUMENT_LOADING_PROGRESS',
-  payload: { documentLoadingProgress },
+export const setLoadingProgress = percent => ({
+  type: 'SET_LOADING_PROGRESS',
+  payload: { progress: percent },
 });
-export const setWorkerLoadingProgress = workerLoadingProgress => ({
-  type: 'SET_WORKER_LOADING_PROGRESS',
-  payload: { workerLoadingProgress },
+export const resetLoadingProgress = () => ({
+  type: 'SET_LOADING_PROGRESS',
+  payload: { progress: 0 },
 });
-export const resetLoadingProgress = () => ({ type: 'RESET_LOADING_PROGRESS' });
-export const setPassword = password => ({
-  type: 'SET_PASSWORD',
-  payload: { password },
-});
-export const setCacheKey = cacheKey => ({
-  type: 'SET_CACHE_KEY',
-  payload: { cacheKey },
-});
-
-export const setIsUploading = isUploading => ({
-  type: 'SET_IS_UPLOADING',
-  payload: { isUploading },
-});
-export const setUploadProgress = progress => ({
-  type: 'SET_UPLOAD_PROGRESS',
-  payload: { progress },
-});
-export const resetUploadProgress = () => setUploadProgress(0);
 
 // user
 export const setUserName = userName => ({
@@ -274,32 +314,6 @@ export const setUserName = userName => ({
 export const setAdminUser = isAdminUser => ({
   type: 'SET_ADMIN_USER',
   payload: { isAdminUser },
-});
-
-// advanced
-export const setStreaming = streaming => ({
-  type: 'SET_STREAMING',
-  payload: { streaming },
-});
-export const setDecryptFunction = decryptFunction => ({
-  type: 'SET_DECRYPT_FUNCTION',
-  payload: { decryptFunction },
-});
-export const setDecryptOptions = decryptOptions => ({
-  type: 'SET_DECRYPT_OPTIONS',
-  payload: { decryptOptions },
-});
-export const setEngineType = type => ({
-  type: 'SET_ENGINE_TYPE',
-  payload: { type },
-});
-export const setCustomHeaders = customHeaders => ({
-  type: 'SET_CUSTOM_HEADERS',
-  payload: { customHeaders },
-});
-export const setWithCredentials = withCredentials => ({
-  type: 'SET_WITH_CREDENTIALS',
-  payload: { withCredentials },
 });
 
 // search
@@ -323,18 +337,6 @@ export const setSearchValue = value => ({
   type: 'SET_SEARCH_VALUE',
   payload: { value },
 });
-export const setActiveResult = activeResult => ({
-  type: 'SET_ACTIVE_RESULT',
-  payload: { activeResult },
-});
-export const setActiveResultIndex = index => ({
-  type: 'SET_ACTIVE_RESULT_INDEX',
-  payload: { index },
-});
-export const addResult = result => ({
-  type: 'ADD_RESULT',
-  payload: { result },
-});
 export const setCaseSensitive = isCaseSensitive => ({
   type: 'SET_CASE_SENSITIVE',
   payload: { isCaseSensitive },
@@ -343,13 +345,13 @@ export const setWholeWord = isWholeWord => ({
   type: 'SET_WHOLE_WORD',
   payload: { isWholeWord },
 });
-export const setIsSearching = isSearching => ({
-  type: 'SET_IS_SEARCHING',
-  payload: { isSearching },
+export const setWildcard = isWildcard => ({
+  type: 'SET_WILD_CARD',
+  payload: { isWildcard },
 });
-export const setNoResult = noResult => ({
-  type: 'SET_NO_RESULT',
-  payload: { noResult },
+export const setSearchError = errorMessage => ({
+  type: 'SET_SEARCH_ERROR',
+  payload: { errorMessage },
 });
 export const resetSearch = () => ({ type: 'RESET_SEARCH', payload: {} });
 export const setIsProgrammaticSearch = isProgrammaticSearch => ({
@@ -359,4 +361,16 @@ export const setIsProgrammaticSearch = isProgrammaticSearch => ({
 export const setIsProgrammaticSearchFull = isProgrammaticSearchFull => ({
   type: 'SET_IS_PROG_SEARCH_FULL',
   payload: { isProgrammaticSearchFull },
+});
+export const setNoteTransformFunction = noteTransformFunction => ({
+  type: 'SET_NOTE_TRANSFORM_FUNCTION',
+  payload: { noteTransformFunction },
+});
+export const setCustomNoteSelectionFunction = customNoteFunction => ({
+  type: 'SET_CUSTOM_NOTE_SELECTION_FUNCTION',
+  payload: { customNoteFunction },
+});
+export const setEnableSnapMode = enable => ({
+  type: 'SET_ENABLE_SNAP_MODE',
+  payload: { enable },
 });

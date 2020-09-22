@@ -1,36 +1,67 @@
-import React, { useState, useRef, useEffect, useImperativeHandle } from 'react';
-import PropTypes from 'prop-types';
-import { useSelector, shallowEqual } from 'react-redux';
-import Measure from 'react-measure';
-import { CellMeasurer, CellMeasurerCache, List } from 'react-virtualized';
+import React, { useState, useRef, useEffect } from 'react';
+import classNames from 'classnames';
+import { useSelector, useDispatch, shallowEqual } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 
+import VirtualizedList from 'components/NotesPanel/VirtualizedList';
+import NormalList from 'components/NotesPanel/NormalList';
 import Dropdown from 'components/Dropdown';
 import Note from 'components/Note';
+import Icon from 'components/Icon';
 import NoteContext from 'components/Note/Context';
 import ListSeparator from 'components/ListSeparator';
+import Button from 'components/Button';
 
 import core from 'core';
-import selectors from 'selectors';
 import { getSortStrategies } from 'constants/sortStrategies';
+import actions from 'actions';
+import selectors from 'selectors';
+import useMedia from 'hooks/useMedia';
 
 import './NotesPanel.scss';
 
-const propTypes = {
-  display: PropTypes.string.isRequired,
-};
-
-const NotesPanel = ({ display }) => {
-  const [sortStrategy, isDisabled, pageLabels, customNoteFilter] = useSelector(
+const NotesPanel = ({ currentLeftPanelWidth }) => {
+  const [
+    sortStrategy,
+    isOpen,
+    isDisabled,
+    pageLabels,
+    customNoteFilter,
+    currentNotesPanelWidth,
+    notesInLeftPanel,
+  ] = useSelector(
     state => [
       selectors.getSortStrategy(state),
+      selectors.isElementOpen(state, 'notesPanel'),
       selectors.isElementDisabled(state, 'notesPanel'),
       selectors.getPageLabels(state),
       selectors.getCustomNoteFilter(state),
+      selectors.getNotesPanelWidth(state),
+      selectors.getNotesInLeftPanel(state),
     ],
     shallowEqual,
   );
+  const currentWidth = currentLeftPanelWidth || currentNotesPanelWidth;
+
+  const dispatch = useDispatch();
+
+  const inputRef = useRef(null);
+  useEffect(() => {
+    if (isOpen) {
+      inputRef.current.focus();
+    }
+  }, [isOpen]);
+
+  const isMobile = useMedia(
+    // Media queries
+    ['(max-width: 640px)'],
+    [true],
+    // Default value
+    false,
+  );
+
   const [notes, setNotes] = useState([]);
+
   // the object will be in a shape of { [note.Id]: true }
   // use a map here instead of an array to achieve an O(1) time complexity for checking if a note is selected
   const [selectedNoteIds, setSelectedNoteIds] = useState({});
@@ -41,7 +72,7 @@ const NotesPanel = ({ display }) => {
   // when the number of notesToRender goes over/below the threshold, we will unmount the current list and mount the other one
   // this will result in losing the scroll position and we will use this ref to recover
   const scrollTopRef = useRef(0);
-  const VIRTUALIZATION_THRESHOLD = 300;
+  const VIRTUALIZATION_THRESHOLD = 100;
 
   useEffect(() => {
     const onDocumentUnloaded = () => {
@@ -49,10 +80,8 @@ const NotesPanel = ({ display }) => {
       setSelectedNoteIds({});
       setSearchInput('');
     };
-
     core.addEventListener('documentUnloaded', onDocumentUnloaded);
-    return () =>
-      core.removeEventListener('documentUnloaded', onDocumentUnloaded);
+    return () => core.removeEventListener('documentUnloaded', onDocumentUnloaded);
   }, []);
 
   useEffect(() => {
@@ -60,21 +89,17 @@ const NotesPanel = ({ display }) => {
       setNotes(
         core
           .getAnnotationsList()
-          .filter(
-            annot =>
-              annot.Listable &&
-              !annot.isReply() &&
-              !annot.Hidden &&
-              !annot.isGrouped(),
-          ),
+          .filter(annot => annot.Listable && !annot.isReply() && !annot.Hidden && !annot.isGrouped()),
       );
     };
 
     core.addEventListener('annotationChanged', _setNotes);
     core.addEventListener('annotationHidden', _setNotes);
 
+    _setNotes();
+
     return () => {
-      core.addEventListener('annotationChanged', _setNotes);
+      core.removeEventListener('annotationChanged', _setNotes);
       core.removeEventListener('annotationHidden', _setNotes);
     };
   }, []);
@@ -88,10 +113,10 @@ const NotesPanel = ({ display }) => {
       });
       setSelectedNoteIds(ids);
     };
+    onAnnotationSelected();
 
     core.addEventListener('annotationSelected', onAnnotationSelected);
-    return () =>
-      core.removeEventListener('annotationSelected', onAnnotationSelected);
+    return () => core.removeEventListener('annotationSelected', onAnnotationSelected);
   }, []);
 
   let singleSelectedNoteIndex = -1;
@@ -103,16 +128,11 @@ const NotesPanel = ({ display }) => {
     // eslint-disable-next-line
   }, [selectedNoteIds]);
 
-  // this effect should be removed once the next version of react-virtualized includes
-  // the fix for https://github.com/bvaughn/react-virtualized/issues/1375.
-  // we are doing this because we want to maintain the scroll position when we switch between panels
-  // currently we are unmounting this component when we clicked other panel tabs
-  // when the fix is out, we don't need to unmount this component anymore, and thus we don't call scrollToPosition whenever this panel is displaying
-  useEffect(() => {
-    if (display === 'flex' && listRef.current && scrollTopRef.current) {
-      listRef.current.scrollToPosition(scrollTopRef.current);
-    }
-  }, [display]);
+  // useEffect(() => {
+  //   if (isOpen) {
+  //     dispatch(actions.closeElements(['searchPanel', 'searchOverlay']));
+  //   }
+  // }, [dispatch, isOpen]);
 
   const handleScroll = scrollTop => {
     if (scrollTop) {
@@ -139,22 +159,15 @@ const NotesPanel = ({ display }) => {
           const content = note.getContents();
           const authorName = core.getDisplayAuthor(note);
 
+          // didn't use regex here because the search input may form an invalid regex, e.g. *
           return (
-            isInputIn(content, searchInput) ||
-            isInputIn(authorName, searchInput)
+            content?.toLowerCase().includes(searchInput.toLowerCase()) ||
+            authorName?.toLowerCase().includes(searchInput.toLowerCase())
           );
         });
     }
 
     return shouldRender;
-  };
-
-  const isInputIn = (string, searchInput) => {
-    if (!string) {
-      return false;
-    }
-
-    return string.search(new RegExp(searchInput, 'i')) !== -1;
   };
 
   const handleInputChange = e => {
@@ -179,24 +192,12 @@ const NotesPanel = ({ display }) => {
     resize = () => {},
   ) => {
     let listSeparator = null;
-    const { shouldRenderSeparator, getSeparatorContent } = getSortStrategies()[
-      sortStrategy
-    ];
+    const { shouldRenderSeparator, getSeparatorContent } = getSortStrategies()[sortStrategy];
     const prevNote = index === 0 ? null : notes[index - 1];
     const currNote = notes[index];
 
-    if (
-      shouldRenderSeparator &&
-      getSeparatorContent &&
-      (!prevNote || shouldRenderSeparator(prevNote, currNote))
-    ) {
-      listSeparator = (
-        <ListSeparator
-          renderContent={() =>
-            getSeparatorContent(prevNote, currNote, { pageLabels })
-          }
-        />
-      );
+    if (shouldRenderSeparator && getSeparatorContent && (!prevNote || shouldRenderSeparator(prevNote, currNote))) {
+      listSeparator = <ListSeparator renderContent={() => getSeparatorContent(prevNote, currNote, { pageLabels })} />;
     }
 
     // can potentially optimize this a bit since a new reference will cause consumers to rerender
@@ -208,12 +209,15 @@ const NotesPanel = ({ display }) => {
     };
 
     return (
-      <>
+      // unfortunately we need to use an actual div instead of React.Fragment here so that we can pass the correct index to scrollToRow
+      // if this is a fragment then the listSeparator is rendered as a separate child, which means
+      // singleSelectedNoteIndex might not be the index of the selected note among all the child elements of the notes panel
+      <div className="note-wrapper">
         {listSeparator}
         <NoteContext.Provider value={contextValue}>
           <Note annotation={currNote} />
         </NoteContext.Provider>
-      </>
+      </div>
     );
   };
 
@@ -221,197 +225,118 @@ const NotesPanel = ({ display }) => {
     [sortStrategy].getSortedNotes(notes)
     .filter(filterNote);
 
+  const NoResults = (
+    <div className="no-results">
+      <div>
+        <Icon className="empty-icon" glyph="illustration - empty state - outlines" />
+      </div>
+      <div className="msg">{t('message.noResults')}</div>
+    </div>
+  );
+
+  const NoAnnotations = (
+    <div className="no-annotations">
+      <div>
+        <Icon className="empty-icon" glyph="illustration - empty state - outlines" />
+      </div>
+      <div className="msg">{t('message.noAnnotations')}</div>
+    </div>
+  );
+
   // keep track of the index of the single selected note in the sorted and filtered list
   // in order to scroll it into view in this render effect
   const ids = Object.keys(selectedNoteIds);
   if (ids.length === 1) {
-    singleSelectedNoteIndex = notesToRender.findIndex(
-      note => note.Id === ids[0],
-    );
+    singleSelectedNoteIndex = notesToRender.findIndex(note => note.Id === ids[0]);
   }
 
-  // when either of the other two panel tabs is clicked, the "display" prop will become "none"
-  // like other two panels, we should set the display style of the div to props.display
-  // but if we do this, sometimes a maximum updates errors will be thrown from react-virtualized if we click the other two panels
-  // it looks like the issue is reported here: https://github.com/bvaughn/react-virtualized/issues/1375
-  // the PR for fixing this issue has been merged but not yet released so as a workaround we are unmounting
-  // the whole component when props.display === 'none'
-  // this should be changed back after the fixed is released in the next version of react-virtualized
-  return isDisabled || display === 'none' ? null : (
+  let style = {};
+  if (!isMobile) {
+    style = { width: `${currentWidth}px`, minWidth: `${currentWidth}px` };
+  }
+
+  return (
+
     <div
-      className="Panel NotesPanel"
+      className={classNames({
+        Panel: true,
+        NotesPanel: true,
+      })}
+      style={style}
       data-element="notesPanel"
-      onMouseDown={core.deselectAllAnnotations}
+      onClick={core.deselectAllAnnotations}
     >
-      {notes.length === 0 ? (
-        <div className="no-annotations">{t('message.noAnnotations')}</div>
-      ) : (
-        <>
-          <div className="header">
+      {isMobile && !notesInLeftPanel &&
+        <div
+          className="close-container"
+        >
+          <div
+            className="close-icon-container"
+            onClick={() => {
+              dispatch(actions.closeElements(['notesPanel']));
+            }}
+          >
+            <Icon
+              glyph="ic_close_black_24px"
+              className="close-icon"
+            />
+          </div>
+        </div>}
+      <React.Fragment>
+        <div className="header">
+          <div className="input-container">
             <input
               type="text"
-              placeholder={t('message.searchPlaceholder')}
+              placeholder={t('message.searchCommentsPlaceholder')}
+              aria-label={t('message.searchCommentsPlaceholder')}
               onChange={handleInputChange}
+              ref={inputRef}
+              id="NotesPanel__input"
             />
-            <Dropdown items={Object.keys(getSortStrategies())} />
           </div>
-          {notesToRender.length === 0 ? (
-            <div className="no-results">{t('message.noResults')}</div>
-          ) : notesToRender.length <= VIRTUALIZATION_THRESHOLD ? (
-            <NormalList
-              ref={listRef}
-              notes={notesToRender}
-              onScroll={handleScroll}
-              initialScrollTop={scrollTopRef.current}
-            >
-              {renderChild}
-            </NormalList>
-          ) : (
-            <VirtualizedList
-              ref={listRef}
-              notes={notesToRender}
-              onScroll={handleScroll}
-              initialScrollTop={scrollTopRef.current}
-            >
-              {renderChild}
-            </VirtualizedList>
-          )}
-        </>
-      )}
+          <div className="divider" />
+          <div className="sort-row">
+                  <Button
+                    dataElement="filterAnnotationButton"
+                    className="filter-annotation-button"
+                    label={t('component.filter')}
+                    onClick={() => dispatch(actions.openElement('filterModal'))}
+                  />
+                  <div className="sort-container">
+                    <div className="label">{`Sort by:`}</div>
+                    <Dropdown
+                      items={Object.keys(getSortStrategies())}
+                      translationPrefix="option.notesOrder"
+                      currentSelectionKey={sortStrategy}
+                      onClickItem={sortStrategy => {
+                        dispatch(actions.setSortStrategy(sortStrategy));
+                      }}
+                    />
+                  </div>
+                </div>
+        </div>
+        {notesToRender.length === 0 ? (notes.length === 0 ? NoAnnotations : NoResults) : notesToRender.length <= VIRTUALIZATION_THRESHOLD ? (
+          <NormalList
+            ref={listRef}
+            notes={notesToRender}
+            onScroll={handleScroll}
+            initialScrollTop={scrollTopRef.current}
+          >
+            {renderChild}
+          </NormalList>
+        ) : (
+          <VirtualizedList
+            ref={listRef}
+            notes={notesToRender}
+            onScroll={handleScroll}
+            initialScrollTop={scrollTopRef.current}
+          >
+            {renderChild}
+          </VirtualizedList>
+        )}
+      </React.Fragment>
     </div>
   );
 };
 
-NotesPanel.propTypes = propTypes;
-
 export default NotesPanel;
-
-const listPropTypes = {
-  notes: PropTypes.array.isRequired,
-  children: PropTypes.func.isRequired,
-  onScroll: PropTypes.func.isRequired,
-  initialScrollTop: PropTypes.number.isRequired,
-};
-
-const cache = new CellMeasurerCache({ defaultHeight: 50, fixedWidth: true });
-
-const VirtualizedList = React.forwardRef(
-  ({ notes, children, onScroll, initialScrollTop }, forwardedRef) => {
-    const listRef = useRef();
-    const [dimension, setDimension] = useState({ width: 0, height: 0 });
-
-    useImperativeHandle(forwardedRef, () => ({
-      scrollToPosition: scrollTop => {
-        listRef.current.scrollToPosition(scrollTop);
-      },
-      scrollToRow: index => {
-        listRef.current.scrollToRow(index);
-      },
-    }));
-
-    useEffect(() => {
-      listRef.current.scrollToPosition(initialScrollTop);
-    }, [initialScrollTop]);
-
-    const _resize = index => {
-      cache.clear(index);
-      listRef.current?.recomputeRowHeights(index);
-    };
-
-    const handleScroll = ({ scrollTop }) => {
-      onScroll(scrollTop);
-    };
-
-    /* eslint-disable react/prop-types */
-    const rowRenderer = ({ index, key, parent, style }) => {
-      const currNote = notes[index];
-
-      return (
-        <CellMeasurer
-          key={`${key}${currNote.Id}`}
-          cache={cache}
-          columnIndex={0}
-          parent={parent}
-          rowIndex={index}
-        >
-          <div style={style}>
-            {children(notes, index, () => _resize(index))}
-          </div>
-        </CellMeasurer>
-      );
-    };
-
-    return (
-      <Measure bounds onResize={({ bounds }) => setDimension(bounds)}>
-        {({ measureRef }) => (
-          <div ref={measureRef} className="virtualized-notes-container">
-            <List
-              deferredMeasurementCache={cache}
-              style={{ outline: 'none' }}
-              height={dimension.height}
-              width={dimension.width}
-              overscanRowCount={10}
-              ref={listRef}
-              rowCount={notes.length}
-              rowHeight={cache.rowHeight}
-              rowRenderer={rowRenderer}
-              onScroll={handleScroll}
-            />
-          </div>
-        )}
-      </Measure>
-    );
-  },
-);
-
-VirtualizedList.propTypes = listPropTypes;
-
-const NormalList = React.forwardRef(
-  ({ notes, children, onScroll, initialScrollTop }, forwardedRef) => {
-    const listRef = useRef();
-
-    useImperativeHandle(forwardedRef, () => ({
-      scrollToPosition: scrollTop => {
-        listRef.current.scrollTop = scrollTop;
-      },
-      scrollToRow: index => {
-        const parent = listRef.current;
-        const child = parent.children[index];
-
-        const parentRect = parent.getBoundingClientRect();
-        const childRect = child.getBoundingClientRect();
-
-        const isViewable =
-          childRect.top >= parentRect.top &&
-          childRect.top <= parentRect.top + parent.clientHeight;
-        if (!isViewable) {
-          parent.scrollTop = childRect.top + parent.scrollTop - parentRect.top;
-        }
-      },
-    }));
-
-    useEffect(() => {
-      listRef.current.scrollTop = initialScrollTop;
-    }, [initialScrollTop]);
-
-    const handleScroll = e => {
-      onScroll(e.target.scrollTop);
-    };
-
-    return (
-      <div
-        ref={listRef}
-        className="normal-notes-container"
-        onScroll={handleScroll}
-      >
-        {notes.map((currNote, index) => (
-          <React.Fragment key={`${index}${currNote.Id}`}>
-            {children(notes, index)}
-          </React.Fragment>
-        ))}
-      </div>
-    );
-  },
-);
-
-NormalList.propTypes = listPropTypes;

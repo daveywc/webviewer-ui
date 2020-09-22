@@ -1,3 +1,5 @@
 import selectors from 'selectors';
 
-export default store => () => !!selectors.isElementOpen(store.getState(), 'leftPanel');
+export default store => () => {
+  return !!selectors.isElementOpen(store.getState(), 'leftPanel');
+};

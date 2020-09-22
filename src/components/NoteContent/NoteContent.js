@@ -1,17 +1,25 @@
-import React, { useState, useRef, useEffect, useContext } from 'react';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useContext,
+  useMemo,
+  useCallback,
+} from 'react';
 import PropTypes from 'prop-types';
-import classNames from 'classnames';
 import { useDispatch, useSelector, shallowEqual } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import Autolinker from 'autolinker';
 import dayjs from 'dayjs';
 
-import AutoResizeTextarea from 'components/AutoResizeTextarea';
+import NoteTextarea from 'components/NoteTextarea';
 import NotePopup from 'components/NotePopup';
+import NoteState from 'components/NoteState';
 import NoteContext from 'components/Note/Context';
 import Icon from 'components/Icon';
 
 import core from 'core';
+import mentionsManager from 'helpers/MentionsManager';
 import { mapAnnotationToKey, getDataWithKey } from 'constants/map';
 import escapeHtml from 'helpers/escapeHtml';
 import useDidUpdate from 'hooks/useDidUpdate';
@@ -24,26 +32,26 @@ const propTypes = {
   annotation: PropTypes.object.isRequired,
 };
 
-const NoteContent = ({ annotation }) => {
+const NoteContent = ({ annotation, isEditing, setIsEditing, noteIndex }) => {
   const [
-    sortStrategy,
     noteDateFormat,
     iconColor,
     isNoteEditingTriggeredByAnnotationPopup,
+    isStateDisabled,
   ] = useSelector(
     state => [
-      selectors.getSortStrategy(state),
       selectors.getNoteDateFormat(state),
       selectors.getIconColor(state, mapAnnotationToKey(annotation)),
       selectors.getIsNoteEditing(state),
+      selectors.isElementDisabled(state, 'notePopupState'),
     ],
     shallowEqual,
   );
+
   const { isSelected, searchInput, resize, isContentEditable } = useContext(
     NoteContext,
   );
-  const [isEditing, setIsEditing] = useState(false);
-  const [textAreaValue, setTextAreaValue] = useState(annotation.getContents());
+
   const dispatch = useDispatch();
   const isReply = annotation.isReply();
 
@@ -64,119 +72,97 @@ const NoteContent = ({ annotation }) => {
       isSelected &&
       isContentEditable
     ) {
-      setIsEditing(true);
+      setIsEditing(true, noteIndex);
     }
-  }, [isContentEditable, isNoteEditingTriggeredByAnnotationPopup, isSelected]);
+  }, [isContentEditable, isNoteEditingTriggeredByAnnotationPopup, isSelected, setIsEditing]);
 
-  const handleContainerClick = e => {
-    if (isSelected) {
-      // stop bubbling up otherwise the note will be closed due to annotation deselection
-      // when the note is selected, we only want it to be closed when the note content header is clicked
-      // because users may try to select text or click any links in contents and we don't want the note to collapse
-      // when they are doing that
-      e.stopPropagation();
-    }
-  };
+  const renderAuthorName = useCallback(
+    annotation => {
+      const name = core.getDisplayAuthor(annotation);
 
-  const renderAuthorName = annotation => {
-    const name = core.getDisplayAuthor(annotation);
-
-    if (!name) {
-      return '(no name)';
-    }
-
-    return <span dangerouslySetInnerHTML={{ __html: getText(name) }} />;
-  };
-
-  const renderContents = contents => {
-    contents = escapeHtml(contents);
-
-    let text;
-    const isContentsLinkable = Autolinker.link(contents).indexOf('<a') !== -1;
-    if (isContentsLinkable) {
-      const linkedContent = Autolinker.link(contents, { stripPrefix: false });
-      // if searchInput is 't', replace <a ...>text</a> with
-      // <a ...><span class="highlight">t</span>ext</a>
-      text = linkedContent.replace(/>(.+)</i, (_, p1) => `>${getText(p1)}<`);
-    } else {
-      text = getText(contents);
-    }
-
-    return (
-      <span className="contents" dangerouslySetInnerHTML={{ __html: text }} />
-    );
-  };
-
-  const getText = text => {
-    if (searchInput.trim()) {
-      return text.replace(
-        new RegExp(`(${searchInput})`, 'gi'),
-        '<span class="highlight">$1</span>',
+      return name ? (
+        <span
+          dangerouslySetInnerHTML={{
+            __html: highlightSearchInput(name, searchInput),
+          }}
+        />
+      ) : (
+        '(no name)'
       );
-    }
+    },
+    [searchInput],
+  );
 
-    return text;
-  };
+  const renderContents = useCallback(
+    contents => {
+      contents = escapeHtml(contents);
 
-  let header;
-  if (isReply) {
-    header = (
-      <div className="title">
-        {renderAuthorName(annotation)}
-        <span className="spacer" />
-        <span className="time">
-          {` ${dayjs(annotation.DateCreated).format(noteDateFormat)}`}
-        </span>
-        {isSelected && (
-          <NotePopup annotation={annotation} setIsEditing={setIsEditing} />
-        )}
-      </div>
-    );
-  } else {
-    const icon = getDataWithKey(mapAnnotationToKey(annotation)).icon;
-    const color = annotation[iconColor]?.toHexString?.();
-    const numberOfReplies = annotation.getReplies().length;
+      let text;
+      const transformedContents = Autolinker.link(contents, {
+        stripPrefix: false,
+      });
+      if (transformedContents.includes('<a')) {
+        // if searchInput is 't', replace <a ...>text</a> with
+        // <a ...><span class="highlight">t</span>ext</a>
+        text = transformedContents.replace(
+          />(.+)</i,
+          (_, p1) => `>${highlightSearchInput(p1, searchInput)}<`,
+        );
+      } else {
+        text = highlightSearchInput(contents, searchInput);
+      }
 
-    header = (
-      <div className="title">
-        <div className="type">
-          {icon ? (
-            <Icon className="icon" glyph={icon} color={color} />
-          ) : (
-            annotation.Subject
-          )}
-        </div>
-        {renderAuthorName(annotation)}
-        {(sortStrategy !== 'time' || isSelected || numberOfReplies > 0) && (
-          <span className="spacer" />
-        )}
-        <div className="time">
-          {(sortStrategy !== 'time' || isSelected) &&
-            dayjs(annotation.DateCreated || new Date()).format(noteDateFormat)}
-          {numberOfReplies > 0 && ` (${numberOfReplies})`}
-        </div>
-        {isSelected && (
-          <NotePopup annotation={annotation} setIsEditing={setIsEditing} />
-        )}
-      </div>
-    );
-  }
+      return (
+        <span className="contents" dangerouslySetInnerHTML={{ __html: text }} />
+      );
+    },
+    [searchInput],
+  );
 
+  const icon = getDataWithKey(mapAnnotationToKey(annotation)).icon;
+  const color = annotation[iconColor]?.toHexString?.();
   const contents = annotation.getContents();
+  const numberOfReplies = annotation.getReplies().length;
+  const formatNumberOfReplies = Math.min(numberOfReplies, 9);
 
-  return (
-    <div
-      className="NoteContent"
-      // to prevent textarea from blurring out during editing when clicking on the note content
-      onMouseDown={e => e.preventDefault()}
-    >
-      {header}
-      <div className="content-container" onMouseDown={handleContainerClick}>
-        {isEditing ? (
+  const header = useMemo(() => (
+    <React.Fragment>
+      {!isReply &&
+        <div className="type-icon-container">
+          {numberOfReplies > 0 &&
+            <div className="num-replies-container">
+              <div className="num-replies">{formatNumberOfReplies}</div>
+            </div>}
+          <Icon className="type-icon" glyph={icon} color={color} />
+        </div>
+      }
+      <div className="author-and-date">
+        <div className="author-and-overflow">
+          <div className="author-and-time">
+            {renderAuthorName(annotation)}
+            <div className="date-and-time">
+              {dayjs(annotation.DateCreated || new Date()).format(noteDateFormat)}
+            </div>
+          </div>
+          <div className="state-and-overflow">
+            {!isStateDisabled && !isReply &&
+              <NoteState
+                annotation={annotation}
+                isSelected={isSelected}
+              />
+            }
+            {!isEditing && isSelected &&
+              <NotePopup
+                noteIndex={noteIndex}
+                annotation={annotation}
+                setIsEditing={setIsEditing}
+              />}
+          </div>
+        </div>
+        {isEditing && isSelected ? (
           <ContentArea
-            textAreaValue={textAreaValue}
-            onTextAreaValueChange={setTextAreaValue}
             annotation={annotation}
+            noteIndex={noteIndex}
             setIsEditing={setIsEditing}
           />
         ) : (
@@ -185,7 +171,17 @@ const NoteContent = ({ annotation }) => {
           )
         )}
       </div>
-    </div>
+    </React.Fragment>
+  ), [isReply, numberOfReplies, formatNumberOfReplies, icon, color, renderAuthorName, annotation, noteDateFormat, isStateDisabled, isSelected, isEditing, setIsEditing, contents, renderContents]);
+
+
+  return useMemo(
+    () => (
+      <div className="NoteContent">
+        {header}
+      </div>
+    ),
+    [header],
   );
 };
 
@@ -196,13 +192,16 @@ export default NoteContent;
 // a component that contains the content textarea, the save button and the cancel button
 const ContentArea = ({
   annotation,
+  noteIndex,
   setIsEditing,
-  textAreaValue,
-  onTextAreaValueChange,
 }) => {
-  const contents = annotation.getContents();
+  const [isMentionEnabled] = useSelector(state => [
+    selectors.getIsMentionEnabled(state),
+  ]);
   const [t] = useTranslation();
   const textareaRef = useRef();
+  const [ textAreaValue, setTextAreaValue] = useState(annotation.getCustomData('trn-mention')?.contents || annotation.getContents());
+  const textValueBeforeChanges = annotation.getCustomData('trn-mention')?.contents || annotation.getContents();
 
   useEffect(() => {
     // on initial mount, focus the last character of the textarea
@@ -218,53 +217,84 @@ const ContentArea = ({
     // prevent the textarea from blurring out which will unmount these two buttons
     e.preventDefault();
 
-    const hasEdited = textAreaValue !== contents;
-    if (hasEdited) {
+    if (isMentionEnabled) {
+      const { plainTextValue, ids } = mentionsManager.extractMentionDataFromStr(textAreaValue);
+
+      annotation.setCustomData('trn-mention', {
+        contents: textAreaValue,
+        ids,
+      });
+      core.setNoteContents(annotation, plainTextValue);
+    } else {
       core.setNoteContents(annotation, textAreaValue);
-      if (annotation instanceof window.Annotations.FreeTextAnnotation) {
-        core.drawAnnotationsFromList([annotation]);
-      }
-
-      setIsEditing(false);
     }
-  };
 
-  const saveBtnClass = classNames({
-    disabled: textAreaValue === contents,
-  });
+    if (annotation instanceof window.Annotations.FreeTextAnnotation) {
+      core.drawAnnotationsFromList([annotation]);
+    }
+
+    setIsEditing(false, noteIndex);
+  };
 
   return (
     <div className="edit-content">
-      <AutoResizeTextarea
+      <NoteTextarea
         ref={el => {
           textareaRef.current = el;
         }}
         value={textAreaValue}
-        onChange={onTextAreaValueChange}
-        onBlur={() => setIsEditing(false)}
+        onChange={setTextAreaValue}
         onSubmit={setContents}
         placeholder={`${t('action.comment')}...`}
+        aria-label={`${t('action.comment')}...`}
       />
-      <span className="buttons">
-        <button className={saveBtnClass} onMouseDown={setContents}>
-          {t('action.save')}
-        </button>
-        <button
-          onMouseDown={() => {
-            setIsEditing(false);
-            onTextAreaValueChange(contents);
+      <div className="edit-buttons">
+        <div
+          className="cancel-button"
+          onClick={e => {
+            e.stopPropagation();
+            setIsEditing(false, noteIndex);
+            setTextAreaValue(textValueBeforeChanges);
           }}
         >
           {t('action.cancel')}
-        </button>
-      </span>
+        </div>
+        <div
+          className="save-button"
+          onClick={e => {
+            e.stopPropagation();
+            setContents(e);
+          }}
+        >
+          {t('action.save')}
+        </div>
+      </div>
     </div>
   );
 };
 
 ContentArea.propTypes = {
+  noteIndex: PropTypes.number.isRequired,
   annotation: PropTypes.object.isRequired,
   setIsEditing: PropTypes.func.isRequired,
   textAreaValue: PropTypes.string,
   onTextAreaValueChange: PropTypes.func.isRequired,
+};
+
+const highlightSearchInput = (text, searchInput) => {
+  if (searchInput.trim()) {
+    try {
+      text = text.replace(
+        new RegExp(`(${searchInput})`, 'gi'),
+        '<span class="highlight">$1</span>',
+      );
+    } catch (e) {
+      // this condition is usually met when a search input contains symbols like *?!
+      text = text
+        .split(searchInput)
+        .join(`<span class="highlight">${searchInput}</span>`);
+    }
+  }
+
+  return text;
 };

@@ -5,6 +5,9 @@ import setDisplayMode from './setDisplayMode';
 import getDisplayMode from './getDisplayMode';
 import rotateClockwise from './rotateClockwise';
 import rotateCounterClockwise from './rotateCounterClockwise';
+import rotatePages from './rotatePages';
+import movePages from './movePages';
+import removePages from './removePages';
 import getFitMode from './getFitMode';
 import fitToPage from './fitToPage';
 import fitToWidth from './fitToWidth';
@@ -44,7 +47,9 @@ import getCompleteRotation from './getCompleteRotation';
 import getRotation from './getRotation';
 import getPageInfo from './getPageInfo';
 import clearSearchResults from './clearSearchResults';
+import getPageSearchResults from './getPageSearchResults';
 import displayAdditionalSearchResult from './displayAdditionalSearchResult';
+import displayAdditionalSearchResults from './displayAdditionalSearchResults';
 import displaySearchResult from './displaySearchResult';
 import setActiveSearchResult from './setActiveSearchResult';
 import textSearchInit from './textSearchInit';
@@ -68,12 +73,15 @@ import drawAnnotationsFromList from './drawAnnotationsFromList';
 import setInternalAnnotationsTransform from './setInternalAnnotationsTransform';
 import setPagesUpdatedInternalAnnotationsTransform from './setPagesUpdatedInternalAnnotationsTransform';
 import loadAsync from './loadAsync';
+import loadDocument from './loadDocument';
 import loadThumbnailAsync from './loadThumbnailAsync';
 import getSelectedTextQuads from './getSelectedTextQuads';
 import getDisplayModeObject from './getDisplayModeObject';
 import getScrollViewElement from './getScrollViewElement';
 import getAnnotationById from './getAnnotationById';
+import getAnnotationByMouseEvent from './getAnnotationByMouseEvent';
 import isFullPDFEnabled from './isFullPDFEnabled';
+import isBlendModeSupported from './isBlendModeSupported';
 import isAnnotationSelected from './isAnnotationSelected';
 import setAnnotationStyles from './setAnnotationStyles';
 import deselectAnnotation from './deselectAnnotation';
@@ -91,6 +99,18 @@ import hideAnnotations from './hideAnnotations';
 import goToOutline from './goToOutline';
 import getViewerElement from './getViewerElement';
 import { addEventListener, removeEventListener } from './eventListener';
+import setAnnotationCanvasTransform from './setAnnotationCanvasTransform';
+import getAnnotationCopy from './getAnnotationCopy';
+import setWatermark from './setWatermark';
+import getWatermark from './getWatermark';
+import groupAnnotations from './groupAnnotations';
+import ungroupAnnotations from './ungroupAnnotations';
+import getNumberOfGroups from './getNumberOfGroups';
+import undo from './undo';
+import redo from './redo';
+import updateAnnotationState from './updateAnnotationState';
+import getFontStyles from './getFontStyles';
+import mergeDocument from './mergeDocument';
 
 export default {
   setToolMode,
@@ -100,6 +120,9 @@ export default {
   getDisplayMode,
   rotateClockwise,
   rotateCounterClockwise,
+  rotatePages,
+  movePages,
+  removePages,
   getFitMode,
   fitToPage,
   fitToWidth,
@@ -139,7 +162,9 @@ export default {
   getRotation,
   getPageInfo,
   clearSearchResults,
+  getPageSearchResults,
   displayAdditionalSearchResult,
+  displayAdditionalSearchResults,
   setActiveSearchResult,
   textSearchInit,
   displaySearchResult,
@@ -164,11 +189,13 @@ export default {
   setPagesUpdatedInternalAnnotationsTransform,
   loadThumbnailAsync,
   loadAsync,
+  loadDocument,
   getSelectedTextQuads,
   getDisplayModeObject,
   getScrollViewElement,
   getAnnotationById,
   isFullPDFEnabled,
+  isBlendModeSupported,
   isAnnotationSelected,
   setAnnotationStyles,
   deselectAnnotation,
@@ -187,4 +214,17 @@ export default {
   hideAnnotations,
   goToOutline,
   getViewerElement,
+  setAnnotationCanvasTransform,
+  getAnnotationCopy,
+  setWatermark,
+  getWatermark,
+  getAnnotationByMouseEvent,
+  groupAnnotations,
+  ungroupAnnotations,
+  getNumberOfGroups,
+  undo,
+  redo,
+  updateAnnotationState,
+  getFontStyles,
+  mergeDocument,
 };

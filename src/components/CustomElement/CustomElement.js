@@ -3,6 +3,7 @@ import classNames from 'classnames';
 import { useSelector } from 'react-redux';
 import PropTypes from 'prop-types';
 
+import Tooltip from 'components/Tooltip';
 import selectors from 'selectors';
 
 import './CustomElement.scss';
@@ -13,6 +14,7 @@ const propTypes = {
   display: PropTypes.string,
   render: PropTypes.func.isRequired,
   mediaQueryClassName: PropTypes.string,
+  title: PropTypes.string,
 };
 
 const CustomElement = ({
@@ -21,13 +23,15 @@ const CustomElement = ({
   display,
   render,
   mediaQueryClassName,
+  title,
 }) => {
   const [reactComponent, setReactComponent] = useState(null);
   const wrapperRef = useRef();
+  const toolTipWrapperRef = useRef();
   const isDisabled = useSelector(state => selectors.isElementDisabled(state, dataElement));
 
   useEffect(() => {
-    // currently UI is running in an iframe, and there are two ways a user can add a CustomElement component to the header using setHeaderItems.
+    // currently UI is running in an iframe, and there are two ways an user can add a CustomElement component to the header using setHeaderItems.
     // one way is in a config file. This way the element created by document.createElement() is an instanceof window.Element but not window.parent.Element since
     // code inside the config is running inside the iframe and window.parent is the iframe
     // the other way is calling setHeaderItems and creating elements outside the iframe. This way the element is an instanceof window.parent.Element, not window.Element
@@ -48,7 +52,12 @@ const CustomElement = ({
       const element = render();
 
       if (isDOMElement(element)) {
-        wrapperRef.current.appendChild(element);
+        const wrapperElement = toolTipWrapperRef.current ? toolTipWrapperRef.current : wrapperRef.current;
+
+        while (wrapperElement.firstChild) {
+          wrapperElement.removeChild(wrapperElement.firstChild);
+        }
+        wrapperElement.appendChild(element);
       } else if (isReactElement(element)) {
         setReactComponent(element);
       } else {
@@ -59,7 +68,11 @@ const CustomElement = ({
     }
   }, [isDisabled, render]);
 
-  return isDisabled ? null : (
+  if (isDisabled) {
+    return null;
+  }
+
+  const children = (
     <div
       className={classNames({
         [className]: !!className,
@@ -72,6 +85,8 @@ const CustomElement = ({
       {reactComponent}
     </div>
   );
+
+  return title ? (<Tooltip content={title} ref={toolTipWrapperRef}>{children}</Tooltip>) : children;
 };
 
 CustomElement.propTypes = propTypes;

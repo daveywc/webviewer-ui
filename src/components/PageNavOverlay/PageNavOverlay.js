@@ -1,13 +1,17 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import { connect } from 'react-redux';
+import React from "react";
+import PropTypes from "prop-types";
+import { connect } from "react-redux";
+import { withTranslation } from 'react-i18next';
 
-import core from 'core';
-import getClassName from 'helpers/getClassName';
-import selectors from 'selectors';
-import { isIOS } from 'helpers/device';
+import core from "core";
+import classNames from 'classnames';
+import selectors from "selectors";
+import { isIOS } from "helpers/device";
+import useMedia from 'hooks/useMedia';
 
-import './PageNavOverlay.scss';
+import Icon from "components/Icon";
+
+import "./PageNavOverlay.scss";
 
 class PageNavOverlay extends React.PureComponent {
   static propTypes = {
@@ -18,38 +22,34 @@ class PageNavOverlay extends React.PureComponent {
     currentPage: PropTypes.number,
     totalPages: PropTypes.number,
     pageLabels: PropTypes.array.isRequired,
+    allowPageNavigation: PropTypes.bool.isRequired,
   };
 
   constructor(props) {
     super(props);
     this.textInput = React.createRef();
     this.state = {
-      input: '',
-      isCustomPageLabels: false,
+      input: null,
+      isCustomPageLabels: false
     };
   }
 
   componentDidUpdate(prevProps) {
     if (prevProps.pageLabels !== this.props.pageLabels) {
-      const isCustomPageLabels = this.props.pageLabels.some((label, index) => label !== `${index + 1}`);
+      const isCustomPageLabels = this.props.pageLabels.some(
+        (label, index) => label !== `${index + 1}`
+      );
       this.setState({ isCustomPageLabels });
     }
 
-    if (prevProps.currentPage !== this.props.currentPage || prevProps.pageLabels !== this.props.pageLabels) {
-      this.setState({ input: this.props.pageLabels[this.props.currentPage - 1] });
+    if (
+      prevProps.currentPage !== this.props.currentPage ||
+      prevProps.pageLabels !== this.props.pageLabels
+    ) {
+      this.setState({
+        input: this.props.pageLabels[this.props.currentPage - 1],
+      });
     }
-
-    if (prevProps.totalPages !== this.props.totalPages && !this.props.isDisabled) {
-      this.setInputWidth();
-    }
-
-    if (prevProps.isDisabled && !this.props.isDisabled) {
-      this.setInputWidth();
-    }
-  }
-
-  setInputWidth = () => {
-    this.textInput.current.style.width = `${this.props.totalPages.toString().length * 11.5}px`;
   }
 
   onClick = () => {
@@ -60,7 +60,7 @@ class PageNavOverlay extends React.PureComponent {
     } else {
       this.textInput.current.select();
     }
-  }
+  };
 
   onChange = e => {
     if (e.target.value.length > this.props.totalPages.toString().length) {
@@ -68,13 +68,13 @@ class PageNavOverlay extends React.PureComponent {
     }
 
     this.setState({ input: e.target.value });
-  }
+  };
 
   onSubmit = e => {
     e.preventDefault();
 
     const { input } = this.state;
-    const isValidInput = input === '' || this.props.pageLabels.includes(input);
+    const isValidInput = input === "" || this.props.pageLabels.includes(input);
 
     if (isValidInput) {
       const pageToGo = this.props.pageLabels.indexOf(input) + 1;
@@ -82,44 +82,99 @@ class PageNavOverlay extends React.PureComponent {
     } else {
       this.textInput.current.blur();
     }
-  }
+  };
 
   onBlur = () => {
     const { currentPage, pageLabels } = this.props;
 
     this.setState({ input: pageLabels[currentPage - 1] });
-  }
+  };
 
   render() {
-    const { isDisabled, isLeftPanelOpen, isLeftPanelDisabled, currentPage, totalPages } = this.props;
-    if (isDisabled) {
+    const { isOpen, isDisabled, currentPage, totalPages, allowPageNavigation, isMobile, t } = this.props;
+    if (isDisabled || !isOpen) {
       return null;
     }
 
-    const className = getClassName(`Overlay PageNavOverlay ${isLeftPanelOpen && !isLeftPanelDisabled ? 'shifted' : ''}`, this.props);
+    const inputWidth = this.state.input ? (this.state.input.length) * (isMobile ? 10: 8) : 0;
 
     return (
-      <div className={className} data-element="pageNavOverlay" onClick={this.onClick}>
-        <form onSubmit={this.onSubmit} onBlur={this.onBlur}>
-          <input ref={this.textInput} type="text" value={this.state.input} onChange={this.onChange} />
-          {this.state.isCustomPageLabels
-            ? ` (${currentPage}/${totalPages})`
-            : ` / ${totalPages}`
+      <div
+        className={classNames({
+          Overlay: true,
+          PageNavOverlay: true,
+        })}
+        data-element="pageNavOverlay"
+      >
+        <button
+          className="side-arrow-container"
+          onClick={() =>
+            window.docViewer.setCurrentPage(
+              Math.max(window.docViewer.getCurrentPage() - 1, 1),
+            )
           }
-        </form>
+          aria-label={t('action.pagePrev')}
+        >
+          <Icon className="side-arrow" glyph="icon-chevron-left" />
+        </button>
+        <div className="formContainer" onClick={this.onClick}>
+          <form onSubmit={this.onSubmit} onBlur={this.onBlur}>
+            <input
+              ref={this.textInput}
+              type="text"
+              value={this.state.input}
+              onChange={this.onChange}
+              tabIndex={-1}
+              disabled={!allowPageNavigation}
+              style={{ width: inputWidth }}
+              aria-label={t('action.pageSet')}
+            />
+            {this.state.isCustomPageLabels
+              ? ` (${currentPage}/${totalPages})`
+              : ` / ${totalPages}`}
+          </form>
+        </div>
+        <button
+          className="side-arrow-container"
+          onClick={() =>
+            window.docViewer.setCurrentPage(
+              Math.min(
+                window.docViewer.getCurrentPage() + 1,
+                window.docViewer.getPageCount(),
+              ),
+            )
+          }
+          aria-label={t('action.pageNext')}
+        >
+          <Icon className="side-arrow" glyph="icon-chevron-right" />
+        </button>
       </div>
     );
   }
 }
 
 const mapStateToProps = state => ({
-  isLeftPanelDisabled: selectors.isElementDisabled(state, 'leftPanel'),
-  isLeftPanelOpen: selectors.isElementOpen(state, 'leftPanel'),
   isDisabled: selectors.isElementDisabled(state, 'pageNavOverlay'),
   isOpen: selectors.isElementOpen(state, 'pageNavOverlay'),
   currentPage: selectors.getCurrentPage(state),
   totalPages: selectors.getTotalPages(state),
   pageLabels: selectors.getPageLabels(state),
+  allowPageNavigation: selectors.getAllowPageNavigation(state),
 });
 
-export default connect(mapStateToProps)(PageNavOverlay);
+const ConnectedPageNavOverlay = connect(mapStateToProps)(withTranslation()(PageNavOverlay));
+
+
+export default props => {
+  const isMobile = useMedia(
+    // Media queries
+    ['(max-width: 640px)'],
+    [true],
+    // Default value
+    false,
+  );
+
+  return (
+    <ConnectedPageNavOverlay {...props} isMobile={isMobile} />
+  );
+};

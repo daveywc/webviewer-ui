@@ -1,65 +1,46 @@
 @import '../../constants/styles';
 
 .Button {
+  @include button-reset;
+
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-width: $button-width;
-  height: $button-height;
-  padding: 6px;
-  // margin: 0 2px;
-  font-size: 16px;
   cursor: pointer;
-
-  @include mobile {
-    // margin: 0 1px;
-    min-width: $button-width-m;
-    height: $button-height-m;
-  }
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  color: var(--text-color);
 
   img {
+    height: 24px;
     width: 24px;
-
-    @include mobile {
-      width: 18px;
-    }
   }
 
-  &:hover {
-    background: #F6F6F6;
-    background: var(--button-hover-color);
-
-    @media (hover: none) {
-      background: transparent;
+  // color for svgs
+  &.active {
+    path[fill=default] {
+      fill: var(--selected-icon-color);
     }
 
-    @include mobile {
-      background: transparent;
+    // hack for pan tool and annot select tool
+    &[data-element="panToolButton"],&[data-element="selectToolButton"] {
+      background: var(--view-header-button-active);
     }
   }
 
   &.active {
-    background: #F0F0F0;
-    background: var(--button-active-color);
-
     .Icon {
-      color: #757575;
-      color: var(--icon-active-color);
+      color: var(--selected-icon-color);
     }
   }
 
-  &.down-arrow:after {
-    content: '';
-    width: 0;
-    height: 0;
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
-    border-top: 6px solid  #757575;
-    border-top: 6px solid var(--icon-color);
-    
-    @include mobile {
-      font-size: 10px;
+  &.disabled {
+    background: none;
+    .Icon {
+      color: var(--disabled-icon);
     }
+    cursor: default;
   }
 }

@@ -25,10 +25,9 @@ class AnnotationStylePopup extends React.Component {
   handleStyleChange = (property, value) => {
     const { annotation } = this.props;
 
-    core.setAnnotationStyles(annotation, oldStyle => ({
-      ...oldStyle,
+    core.setAnnotationStyles(annotation, {
       [property]: value,
-    }));
+    });
 
     setToolStyles(annotation.ToolName, property, value);
   };
@@ -47,9 +46,6 @@ class AnnotationStylePopup extends React.Component {
       annotation.getIntent() ===
         window.Annotations.FreeTextAnnotation.Intent.FreeText;
     const className = getClassName('Popup AnnotationStylePopup', this.props);
-    const hideSlider =
-      annotation instanceof window.Annotations.RedactionAnnotation;
-
     const colorMapKey = mapAnnotationToKey(annotation);
 
     if (isDisabled) {
@@ -62,12 +58,14 @@ class AnnotationStylePopup extends React.Component {
         data-element="annotationStylePopup"
         onClick={this.handleClick}
       >
+        {/* Do not show checkbox for ellipse as snap mode does not exist for it */}
         <StylePopup
+          hideSnapModeCheckbox={(annotation instanceof window.Annotations.EllipseAnnotation || !core.isFullPDFEnabled())}
           colorMapKey={colorMapKey}
           style={style}
           isFreeText={isFreeText}
           onStyleChange={this.handleStyleChange}
-          hideSlider={hideSlider}
+          disableSeparator
         />
       </div>
     );

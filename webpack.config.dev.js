@@ -6,13 +6,13 @@ module.exports = {
   mode: 'development',
   devtool: 'cheap-module-eval-source-map',
   entry: [
-    '@babel/polyfill',
     'webpack-hot-middleware/client?name=ui&path=/__webpack_hmr',
     path.resolve(__dirname, 'src'),
   ],
   output: {
     path: path.resolve(__dirname, 'src'),
     filename: 'webviewer-ui.min.js',
+    chunkFilename: 'chunks/[name].chunk.js',
     publicPath: '/',
   },
   plugins: [new webpack.HotModuleReplacementPlugin()],
@@ -23,7 +23,16 @@ module.exports = {
         use: {
           loader: 'babel-loader',
           options: {
-            presets: ['@babel/preset-react', '@babel/preset-env'],
+            presets: [
+              '@babel/preset-react',
+              [
+                '@babel/preset-env',
+                {
+                  useBuiltIns: 'entry',
+                  corejs: 3,
+                },
+              ],
+            ],
             plugins: [
               'react-hot-loader/babel',
               '@babel/plugin-proposal-function-sent',
@@ -60,6 +69,17 @@ module.exports = {
       {
         test: /\.svg$/,
         use: ['svg-inline-loader'],
+      },
+      {
+        test: /\.woff(2)?$/,
+        use: [
+          {
+            loader: 'file-loader',
+            options: {
+              name: '[name].[ext]',
+            },
+          },
+        ],
       },
     ],
   },

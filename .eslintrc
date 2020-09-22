@@ -8,17 +8,19 @@
     "cypress/globals": true
   },
   "globals": {
-    "$": false,
-    "_": false
+    "_": false,
+    "Annotations": false,
+    "Tools": false
   },
   "extends": [
+    "plugin:jsx-a11y/recommended",
     "eslint:recommended",
     "plugin:react/recommended",
     "plugin:cypress/recommended"
   ],
   "rules": {
     "quotes": [
-      2,
+      0,
       "single",
       {
         "allowTemplateLiterals": true
@@ -67,7 +69,7 @@
     "react/jsx-curly-spacing": 2,
     "react/jsx-boolean-value": 2,
     "react/prop-types": 2,
-    "react-hooks/rules-of-hooks": 2, 
+    "react-hooks/rules-of-hooks": 2,
     "react-hooks/exhaustive-deps": 1,
     "react/sort-comp": 0,
     "react/no-find-dom-node": 0,
@@ -76,6 +78,7 @@
     "import/extensions": 0,
     "import/no-extraneous-dependencies": 0,
     "import/no-dynamic-require": 0,
+    "@pdftron/webviewer/no-string-events": 0,
 
     // these are inherited from git WebViewer's eslint confirguration
     "no-use-before-define": 0,

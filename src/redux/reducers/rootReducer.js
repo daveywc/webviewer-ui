@@ -5,12 +5,21 @@ import viewerReducer from 'reducers/viewerReducer';
 import searchReducer from 'reducers/searchReducer';
 import userReducer from 'reducers/userReducer';
 import documentReducer from 'reducers/documentReducer';
-import advancedReducer from 'reducers/advancedReducer';
+
+import { persistReducer } from 'redux-persist';
+import storage from 'redux-persist/lib/storage';
+
+const viewerPersistConfig = {
+  key: 'viewer',
+  storage,
+  whitelist: ['toolbarGroup', 'lastPickedToolForGroup', 'lastPickedToolGroup'],
+};
 
 export default combineReducers({
-  viewer: viewerReducer(initialState.viewer),
+  viewer: persistReducer(viewerPersistConfig, viewerReducer(initialState.viewer)),
   search: searchReducer(initialState.search),
   user: userReducer(initialState.user),
   document: documentReducer(initialState.document),
-  advanced: advancedReducer(initialState.advanced),
+  // TODO: refactor in another PR to remove state.advanced. It's not necessary to have this because those states never change.
+  advanced: () => initialState.advanced,
 });

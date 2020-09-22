@@ -4,21 +4,26 @@
 .MeasurementOverlay {
   @extend %overlay;
   flex-direction: column;
-  bottom: 20px;
-  right: 20px;
+  bottom: 60px;
+  right: 14px;
   font-size: 16px;
   min-width: 215px;
+  padding: 6px;
 
   @include mobile {
     bottom: 8px;
     right: 8px;
     padding: 8px;
     font-size: 14px;
-    z-index: 50;
   }
 
   & > * {
-    margin: 3px;
+    margin: 6px;
+  }
+
+  &.transparent {
+    opacity: 0.5;
+    pointer-events: none;
   }
 }
 
@@ -36,3 +41,21 @@
   display: flex;
   justify-content: space-between
 }
+
+.lineMeasurementInput {
+  width: 50px;
+  margin-left: 4px;
+}
+
+.length_input {
+  margin-bottom: 3px;
+}
+
+.angle_input {
+  margin-top: 3px;
+
+  .lineMeasurementInput {
+    width: 65px;
+  }
+}
+

@@ -1,214 +1,177 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import { connect } from 'react-redux';
-import { withTranslation } from 'react-i18next';
-import onClickOutside from 'react-onclickoutside';
-
-import Button from 'components/Button';
+import classNames from 'classnames';
 import ActionButton from 'components/ActionButton';
-import Element from 'components/Element';
-
-import core from 'core';
-import getOverlayPositionBasedOn from 'helpers/getOverlayPositionBasedOn';
-import getClassName from 'helpers/getClassName';
-import { zoomIn, zoomOut } from 'helpers/zoom';
+import Button from 'components/Button';
 import displayModeObjects from 'constants/displayModeObjects';
-import actions from 'actions';
+import core from 'core';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { useSelector, useStore } from 'react-redux';
 import selectors from 'selectors';
+import FlyoutMenu from '../FlyoutMenu/FlyoutMenu';
+import DataElementWrapper from "components/DataElementWrapper";
+import { enterReaderMode, exitReaderMode } from 'helpers/readerMode';
 
-import './ViewControlsOverlay.scss';
+function ViewControlsOverlay() {
+  const [t] = useTranslation();
+  const store = useStore();
 
-class ViewControlsOverlay extends React.PureComponent {
-  static propTypes = {
-    totalPages: PropTypes.number.isRequired,
-    displayMode: PropTypes.string.isRequired,
-    fitMode: PropTypes.string.isRequired,
-    isDisabled: PropTypes.bool,
-    isOpen: PropTypes.bool,
-    closeElements: PropTypes.func.isRequired,
-    t: PropTypes.func.isRequired,
-  };
+  const totalPages = useSelector(selectors.getTotalPages);
+  const displayMode = useSelector(selectors.getDisplayMode);
+  const isDisabled = useSelector(state => selectors.isElementDisabled(state, 'viewControlsOverlay'));
+  const isReaderMode = useSelector(selectors.isReaderMode);
 
-  overlay = React.createRef();
+  const totalPageThreshold = 1000;
 
-  state = {
-    left: 0,
-    right: 'auto',
-  };
-
-  componentDidMount() {
-    window.addEventListener('resize', this.handleWindowResize);
-  }
-
-  componentDidUpdate(prevProps) {
-    if (!prevProps.isOpen && this.props.isOpen) {
-      this.props.closeElements([
-        'groupOverlay',
-        'searchOverlay',
-        'menuOverlay',
-        'toolsOverlay',
-        'toolStylePopup',
-        'signatureOverlay',
-        'zoomOverlay',
-        'redactionOverlay',
-      ]);
-      this.setState(
-        getOverlayPositionBasedOn('viewControlsButton', this.overlay),
-      );
+  const handleClick = (pageTransition, layout) => {
+    if (isReaderMode) {
+      exitReaderMode(store);
     }
-  }
 
-  componentWillUnmount() {
-    window.removeEventListener('resize', this.handleWindowResize);
-  }
-
-  handleWindowResize = () => {
-    this.setState(
-      getOverlayPositionBasedOn('viewControlsButton', this.overlay),
-    );
-  };
-
-  handleClickOutside = e => {
-    const clickedViewControlsButton = e.target.getAttribute('data-element') === 'viewControlsButton';
-
-    if (!clickedViewControlsButton) {
-      this.props.closeElements(['viewControlsOverlay']);
-    }
-  }
-
-  handleClick = (pageTransition, layout) => {
     const displayModeObject = displayModeObjects.find(
       obj => obj.pageTransition === pageTransition && obj.layout === layout,
     );
-
     core.setDisplayMode(displayModeObject.displayMode);
   };
 
-  render() {
-    const { isDisabled, displayMode, fitMode, totalPages, t } = this.props;
-    const { left, right } = this.state;
-    const { pageTransition, layout } = displayModeObjects.find(
-      obj => obj.displayMode === displayMode,
-    );
-    const className = getClassName('Overlay ViewControlsOverlay', this.props);
+  const handleReaderModeClick = () => {
+    if (isReaderMode) return;
+    enterReaderMode(store);
+  };
 
-    if (isDisabled) {
-      return null;
-    }
+  if (isDisabled) {
+    return null;
+  }
 
-    return (
-      <div className={className} data-element="viewControlsOverlay" style={{ left, right }} ref={this.overlay}>
-        {totalPages < 1000 &&
-          <Element className="row" dataElement="pageTransitionButtons">
-            <div className="type">{t('option.displayMode.pageTransition')}</div>
-            <Button
-              title="option.pageTransition.default"
-              dataElement="defaultPageTransitionButton"
-              img="ic_view_mode_single_black_24px"
-              onClick={() => this.handleClick('default', layout)}
-              isActive={pageTransition === 'default'}
-            />
+  const { pageTransition, layout } = displayModeObjects.find(obj => obj.displayMode === displayMode);
+
+  return (
+    <FlyoutMenu menu="viewControlsOverlay" trigger="viewControlsButton" onClose={undefined}>
+      <DataElementWrapper
+        dataElement="pageTransitionHeader"
+        className="type"
+      >
+        {t('option.displayMode.pageTransition')}
+      </DataElementWrapper>
+      {totalPages < totalPageThreshold && (
+        <>
+          <DataElementWrapper
+            className={classNames({ row: true, active: (pageTransition === 'continuous' && !isReaderMode) })}
+            onClick={() => handleClick('continuous', layout)}
+            dataElement="continuousPageTransitionButton"
+          >
             <Button
               title="option.pageTransition.continuous"
-              dataElement="continuousPageTransitionButton"
-              img="ic_view_mode_continuous_black_24px"
-              onClick={() => this.handleClick('continuous', layout)}
-              isActive={pageTransition === 'continuous'}
+              img="icon-header-page-manipulation-page-transition-continuous-page-line"
+              isActive={pageTransition === 'continuous' && !isReaderMode}
             />
-          </Element>
-        }
-        <Element className="row" dataElement="layoutButtons">
-          <div className="type">{t('option.displayMode.layout')}</div>
-          <Button
-            title="option.layout.single"
+            <div className="title">{t('option.pageTransition.continuous')}</div>
+          </DataElementWrapper>
+          <DataElementWrapper
+            className={classNames({ row: true, active: (pageTransition === 'default' && !isReaderMode) })}
+            onClick={() => handleClick('default', layout)}
+            dataElement="defaultPageTransitionButton"
+          >
+            <Button
+              title="option.pageTransition.default"
+              img="icon-header-page-manipulation-page-transition-page-by-page-line"
+              isActive={pageTransition === 'default' && !isReaderMode}
+            />
+            <div className="title">{t('option.pageTransition.default')}</div>
+          </DataElementWrapper>
+          {false && core.isFullPDFEnabled() && (
+            <DataElementWrapper
+              className={classNames({ row: true, active: isReaderMode })}
+              onClick={() => handleReaderModeClick()}
+              dataElement="readerPageTransitionButton"
+            >
+              <Button
+                title="option.pageTransition.reader"
+                img="icon-header-page-manipulation-page-transition-reader"
+                isActive={isReaderMode}
+              />
+              <div className="title">{t('option.pageTransition.reader')}</div>
+            </DataElementWrapper>
+          )}
+          {!isReaderMode && (
+            <DataElementWrapper
+              dataElement="viewControlsDivider1"
+              className="divider"
+            />
+          )}
+        </>
+      )}
+      {!isReaderMode && (
+        <>
+          <DataElementWrapper
+            dataElement="rotateHeader"
+            className="type"
+          >
+            {t('action.rotate')}
+          </DataElementWrapper>
+          <DataElementWrapper className="row" onClick={core.rotateClockwise} dataElement="rotateClockwiseButton">
+            <ActionButton
+              title="action.rotateClockwise"
+              img="icon-header-page-manipulation-page-rotation-clockwise-line"
+            />
+            <div className="title">{t('action.rotateClockwise')}</div>
+          </DataElementWrapper>
+          <DataElementWrapper className="row" onClick={core.rotateCounterClockwise} dataElement="rotateCounterClockwiseButton">
+            <ActionButton
+              title="action.rotateCounterClockwise"
+              img="icon-header-page-manipulation-page-rotation-counterclockwise-line"
+            />
+            <div className="title">{t('action.rotateCounterClockwise')}</div>
+          </DataElementWrapper>
+          <DataElementWrapper
+            dataElement="viewControlsDivider2"
+            className="divider"
+          />
+          <DataElementWrapper
+            dataElement="layoutHeader"
+            className="type"
+          >
+            {t('option.displayMode.layout')}
+          </DataElementWrapper>
+          <DataElementWrapper
+            className={classNames({ row: true, active: layout === 'single' })}
+            onClick={() => handleClick(pageTransition, 'single')}
             dataElement="singleLayoutButton"
-            img="ic_view_mode_single_black_24px"
-            onClick={() => this.handleClick(pageTransition, 'single')}
-            isActive={layout === 'single'}
-          />
-          <Button
-            title="option.layout.double"
+          >
+            <Button
+              title="option.layout.single"
+              img="icon-header-page-manipulation-page-layout-single-page-line"
+              isActive={layout === 'single'}
+            />
+            <div className="title">{t('option.layout.single')}</div>
+          </DataElementWrapper>
+          <DataElementWrapper
+            className={classNames({ row: true, active: layout === 'double' })}
+            onClick={() => handleClick(pageTransition, 'double')}
             dataElement="doubleLayoutButton"
-            img="ic_view_mode_facing_black_24px"
-            onClick={() => this.handleClick(pageTransition, 'double')}
-            isActive={layout === 'double'}
-          />
-          <Button
-            title="option.layout.cover"
+          >
+            <Button
+              title="option.layout.double"
+              img="icon-header-page-manipulation-page-layout-double-page-line"
+              isActive={layout === 'double'}
+            />
+            <div className="title">{t('option.layout.double')}</div>
+          </DataElementWrapper>
+          <DataElementWrapper
+            className={classNames({ row: true, active: layout === 'cover' })}
+            onClick={() => handleClick(pageTransition, 'cover')}
             dataElement="coverLayoutButton"
-            img="ic_view_mode_cover_black_24px"
-            onClick={() => this.handleClick(pageTransition, 'cover')}
-            isActive={layout === 'cover'}
-          />
-        </Element>
-        <Element className="row" dataElement="rotateButtons">
-          <div className="type">{t('action.rotate')}</div>
-          <ActionButton
-            dataElement="rotateCounterClockwiseButton"
-            title="action.rotateCounterClockwise"
-            img="ic_rotate_left_black_24px"
-            onClick={core.rotateCounterClockwise}
-          />
-          <ActionButton
-            dataElement="rotateClockwiseButton"
-            title="action.rotateClockwise"
-            img="ic_rotate_right_black_24px"
-            onClick={core.rotateClockwise}
-          />
-        </Element>
-        <Element
-          className="row hide-in-desktop hide-in-tablet"
-          dataElement="fitButtons"
-        >
-          <div className="type">{t('action.fit')}</div>
-          <Button
-            title="action.fitToWidth"
-            dataElement="fitToWidthButton"
-            img="ic_fit_width_black_24px"
-            onClick={core.fitToWidth}
-            isActive={fitMode === 'fitWidth'}
-          />
-          <Button
-            title="action.fitToPage"
-            dataElement="fitToPageButton"
-            img="ic_fit_page_black_24px"
-            onClick={core.fitToPage}
-            isActive={fitMode === 'fitPage'}
-          />
-        </Element>
-        <Element
-          className="row hide-in-desktop hide-in-tablet"
-          dataElement="zoomButtons"
-        >
-          <div className="type">{t('action.zoom')}</div>
-          <ActionButton
-            dataElement="zoomInButton"
-            title="action.zoomIn"
-            img="ic_zoom_in_black_24px"
-            onClick={zoomIn}
-          />
-          <ActionButton
-            dataElement="zoomOutButton"
-            title="action.zoomOut"
-            img="ic_zoom_out_black_24px"
-            onClick={zoomOut}
-          />
-        </Element>
-      </div>
-    );
-  }
+          >
+            <Button
+              title="option.layout.cover"
+              img="icon-header-page-manipulation-page-layout-cover-line"
+              isActive={layout === 'cover'}
+            />
+            <div className="title">{t('option.layout.cover')}</div>
+          </DataElementWrapper>
+        </>
+      )}
+    </FlyoutMenu>
+  );
 }
 
-const mapStateToProps = state => ({
-  totalPages: selectors.getTotalPages(state),
-  displayMode: selectors.getDisplayMode(state),
-  fitMode: selectors.getFitMode(state),
-  isDisabled: selectors.isElementDisabled(state, 'viewControlsOverlay'),
-  isOpen: selectors.isElementOpen(state, 'viewControlsOverlay'),
-});
-
-const mapDispatchToProps = {
-  closeElements: actions.closeElements,
-};
-
-export default connect(mapStateToProps, mapDispatchToProps)(withTranslation()(onClickOutside(ViewControlsOverlay)));
+export default ViewControlsOverlay;

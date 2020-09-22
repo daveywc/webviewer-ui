@@ -23,27 +23,25 @@ const setDefaultToolStyles = () => {
       const tool = toolModeMap[toolName];
 
       toolStyles = getParsedToolStyles(toolStyles);
-      tool.setStyles(oldStyle => ({
-        ...oldStyle,
-        ...toolStyles,
-      }));
+      tool.setStyles(toolStyles);
     }
   });
 };
 
 const getParsedToolStyles = toolStyles =>
   JSON.parse(toolStyles, (_, styles) => {
-    Object.entries(styles).forEach(([key, style]) => {
-      if (isKeyColorProperty(key) && typeof style === 'object') {
-        styles[key] = new window.Annotations.Color(
-          style.R,
-          style.G,
-          style.B,
-          style.A,
-        );
-      }
-    });
-
+    if (styles) {
+      Object.entries(styles).forEach(([key, style]) => {
+        if (isKeyColorProperty(key) && typeof style === 'object') {
+          styles[key] = new window.Annotations.Color(
+            style.R,
+            style.G,
+            style.B,
+            style.A,
+          );
+        }
+      });
+    }
     return styles;
   });
 

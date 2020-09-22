@@ -1,25 +1,24 @@
 import { hot } from 'react-hot-loader/root';
 import React, { useEffect } from 'react';
-import { useStore } from 'react-redux';
+import { useSelector, useStore, useDispatch } from 'react-redux';
+import selectors from 'selectors';
 import PropTypes from 'prop-types';
 
+import Accessibility from 'components/Accessibility';
 import Header from 'components/Header';
+import ToolsHeader from 'components/Header/ToolsHeader';
 import ViewControlsOverlay from 'components/ViewControlsOverlay';
-import SearchOverlay from 'components/SearchOverlay';
 import MenuOverlay from 'components/MenuOverlay';
-import RedactionOverlay from 'components/RedactionOverlay';
-import PageNavOverlay from 'components/PageNavOverlay';
-import ToolsOverlay from 'components/ToolsOverlay';
-import SignatureOverlay from 'components/SignatureOverlay';
-import CursorOverlay from 'components/CursorOverlay';
-import MeasurementOverlay from 'components/MeasurementOverlay';
+import AnnotationContentOverlay from 'components/AnnotationContentOverlay';
 import DocumentContainer from 'components/DocumentContainer';
 import LeftPanel from 'components/LeftPanel';
+import NotesPanel from 'components/NotesPanel';
 import SearchPanel from 'components/SearchPanel';
+import RightPanel from 'components/RightPanel';
 import AnnotationPopup from 'components/AnnotationPopup';
 import TextPopup from 'components/TextPopup';
 import ContextMenuPopup from 'components/ContextMenuPopup';
-import ToolStylePopup from 'components/ToolStylePopup';
+import RichTextPopup from 'components/RichTextPopup';
 import SignatureModal from 'components/SignatureModal';
 import PrintModal from 'components/PrintModal';
 import LoadingModal from 'components/LoadingModal';
@@ -27,17 +26,30 @@ import ErrorModal from 'components/ErrorModal';
 import WarningModal from 'components/WarningModal';
 import PasswordModal from 'components/PasswordModal';
 import ProgressModal from 'components/ProgressModal';
+import CalibrationModal from 'components/CalibrationModal';
+import LinkModal from 'components/LinkModal';
+import FilterAnnotModal from '../FilterAnnotMondal';
 import FilePickerHandler from 'components/FilePickerHandler';
 import CopyTextHandler from 'components/CopyTextHandler';
 import PrintHandler from 'components/PrintHandler';
+import FontHandler from 'components/FontHandler';
 import ZoomOverlay from 'components/ZoomOverlay';
 import PagePreviousOverlay from 'components/PagePreviousOverlay';
 import PageNextOverlay from 'components/PageNextOverlay';
 import PageSliderOverlay from 'components/PageSliderOverlay';
+import CreateStampModal from 'components/CreateStampModal';
+import CustomModal from 'components/CustomModal';
 
 import defineReaderControlAPIs from 'src/apis';
+import fireEvent from 'helpers/fireEvent';
+
+import actions from 'actions';
 
 import './App.scss';
+
+
+// TODO: Use constants
+const tabletBreakpoint = window.matchMedia('(min-width: 641px) and (max-width: 900px)');
 
 const propTypes = {
   removeEventHandlers: PropTypes.func.isRequired,
@@ -45,51 +57,66 @@ const propTypes = {
 
 const App = ({ removeEventHandlers }) => {
   const store = useStore();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     defineReaderControlAPIs(store);
-    window.ControlUtils = {
-      // discussed with the team internally, this will be removed in the next major release
-      getCustomData: () => {
-        console.warn('ControlUtils.getCustomData is deprecated, use instance.getCustomData instead');
-        return window.readerControl.getCustomData();
-      },
+    fireEvent('viewerLoaded');
+
+    const setTabletState = () => {
+      // TODO: Use constants
+      dispatch(actions.setLeftPanelWidth(251));
+      dispatch(actions.setNotesPanelWidth(293));
+      dispatch(actions.setSearchPanelWidth(293));
     };
 
-    $(document).trigger('viewerLoaded');
+    const onBreakpoint = () => {
+      if (tabletBreakpoint.matches) {
+        setTabletState();
+      }
+    };
+    tabletBreakpoint.addListener(onBreakpoint);
 
     return removeEventHandlers;
-  }, [removeEventHandlers, store]);
+    // eslint-disable-next-line
+  }, []);
+
 
   return (
-    <>
+    <React.Fragment>
       <div className="App">
+        <Accessibility />
+
         <Header />
-
-        <LeftPanel />
-        <SearchPanel />
-
-        <DocumentContainer />
-
-        <SearchOverlay />
+        <ToolsHeader />
+        <div className="content">
+          <LeftPanel />
+          <DocumentContainer />
+          <RightPanel
+            dataElement="searchPanel"
+            onResize={width => dispatch(actions.setSearchPanelWidth(width))}
+          >
+            <SearchPanel />
+          </RightPanel>
+          <RightPanel
+            dataElement="notesPanel"
+            onResize={width => dispatch(actions.setNotesPanelWidth(width))}
+          >
+            <NotesPanel />
+          </RightPanel>
+        </div>
         <ViewControlsOverlay />
-        <RedactionOverlay />
         <MenuOverlay />
-        <ToolsOverlay />
-        <SignatureOverlay />
-        <CursorOverlay />
-        <PageNavOverlay />
         <PageSliderOverlay />
         <PagePreviousOverlay />
         <PageNextOverlay />
         <ZoomOverlay />
-        <MeasurementOverlay />
+        <AnnotationContentOverlay />
 
         <AnnotationPopup />
         <TextPopup />
         <ContextMenuPopup />
-        <ToolStylePopup />
-
+        <RichTextPopup />
         <SignatureModal />
         <PrintModal />
         <LoadingModal />
@@ -97,12 +124,18 @@ const App = ({ removeEventHandlers }) => {
         <WarningModal />
         <PasswordModal />
         <ProgressModal />
+        <CalibrationModal />
+        <CreateStampModal />
+        <LinkModal />
+        <FilterAnnotModal />
+        <CustomModal />
       </div>
 
       <PrintHandler />
       <FilePickerHandler />
       <CopyTextHandler />
-    </>
+      <FontHandler />
+    </React.Fragment>
   );
 };
 

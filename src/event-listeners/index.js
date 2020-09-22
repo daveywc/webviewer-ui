@@ -10,15 +10,23 @@ import onZoomUpdated from './onZoomUpdated';
 import onPageNumberUpdated from './onPageNumberUpdated';
 import onStampAnnotationAdded from './onStampAnnotationAdded';
 import onSignatureAnnotationAdded from './onSignatureAnnotationAdded';
+import onFileAttachmentAnnotationAdded from './onFileAttachmentAnnotationAdded';
 import onAnnotationChanged from './onAnnotationChanged';
+import onHistoryChanged from './onHistoryChanged';
 import onStickyAnnotationAdded from './onStickyAnnotationAdded';
-import onKeyDown from './onKeyDown';
 import onFullScreenChange from './onFullScreenChange';
 import onUpdateAnnotationPermission from './onUpdateAnnotationPermission';
 import onLayoutChanged from './onLayoutChanged';
 import onLocationSelected from './onLocationSelected';
+import onRubberStampAnnotationAdded from './onRubberStampAnnotationAdded';
+import onPageComplete from './onPageComplete';
+import onFileAttachmentDataAvailable from './onFileAttachmentDataAvailable';
+import onSignatureSaved from './onSignatureSaved';
+import onSignatureDeleted from './onSignatureDeleted';
 
 export {
+  onSignatureSaved,
+  onSignatureDeleted,
   onBeforeDocumentLoaded,
   onDisplayModeUpdated,
   onDocumentLoaded,
@@ -32,10 +40,14 @@ export {
   onStampAnnotationAdded,
   onSignatureAnnotationAdded,
   onAnnotationChanged,
+  onHistoryChanged,
   onStickyAnnotationAdded,
-  onKeyDown,
   onFullScreenChange,
   onUpdateAnnotationPermission,
   onLayoutChanged,
   onLocationSelected,
+  onRubberStampAnnotationAdded,
+  onPageComplete,
+  onFileAttachmentAnnotationAdded,
+  onFileAttachmentDataAvailable,
 };

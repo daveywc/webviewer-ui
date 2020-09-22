@@ -70,25 +70,10 @@ export default initialState => (state = initialState, action) => {
         isProgrammaticSearchFull: payload.isProgrammaticSearchFull,
       };
     }
-    case 'SET_ACTIVE_RESULT': {
-      return {
-        ...state,
-        activeResult: payload.activeResult,
-      };
-    }
-    case 'SET_ACTIVE_RESULT_INDEX': {
-      return {
-        ...state,
-        activeResultIndex: payload.index,
-      };
-    }
     case 'ADD_RESULT': {
       return {
         ...state,
-        results: [
-          ...state.results,
-          payload.result,
-        ],
+        results: [...state.results, payload.result],
       };
     }
     case 'SET_CASE_SENSITIVE': {
@@ -103,16 +88,16 @@ export default initialState => (state = initialState, action) => {
         isWholeWord: payload.isWholeWord,
       };
     }
-    case 'SET_IS_SEARCHING': {
+    case 'SET_WILD_CARD': {
       return {
         ...state,
-        isSearching: payload.isSearching,
+        isWildcard: payload.isWildcard,
       };
     }
-    case 'SET_NO_RESULT': {
+    case 'SET_SEARCH_ERROR': {
       return {
         ...state,
-        noResult: payload.noResult,
+        errorMessage: payload.errorMessage,
       };
     }
     case 'RESET_SEARCH': {
@@ -122,6 +107,13 @@ export default initialState => (state = initialState, action) => {
         value: state.value,
         isCaseSensitive: state.isCaseSensitive,
         isWholeWord: state.isWholeWord,
+        isWildcard: state.isWildcard,
+      };
+    }
+    case 'SET_SEARCH_RESULTS': {
+      return {
+        ...state,
+        results: payload,
       };
     }
     default:

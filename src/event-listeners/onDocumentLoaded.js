@@ -1,22 +1,28 @@
 import core from 'core';
 import getHashParams from 'helpers/getHashParams';
+import fireEvent from 'helpers/fireEvent';
+import { getLeftPanelDataElements } from 'helpers/isDataElementPanel';
 import actions from 'actions';
+import selectors from 'selectors';
+import { workerTypes } from 'constants/types';
+import { PRIORITY_ONE, PRIORITY_TWO } from 'constants/actionPriority';
+import { print } from 'helpers/print';
 
 let onFirstLoad = true;
 
-export default dispatch => () => {
-  dispatch(actions.setDocumentLoaded(true));
+export default store => () => {
+  const { dispatch, getState } = store;
+
   dispatch(actions.openElement('pageNavOverlay'));
   dispatch(actions.openElement('pageSliderOverlay'));
   dispatch(actions.openElement('pagePreviousOverlay'));
   dispatch(actions.openElement('pageNextOverlay'));
-  dispatch(actions.setDocumentLoadingProgress(1));
-  dispatch(actions.setWorkerLoadingProgress(1));
+  dispatch(actions.setLoadingProgress(1));
+
+  // set timeout so that progress modal can show progress bar properly
   setTimeout(() => {
     dispatch(actions.closeElement('progressModal'));
     dispatch(actions.resetLoadingProgress());
-    dispatch(actions.resetUploadProgress());
-    dispatch(actions.setIsUploading(false));
   }, 300);
 
   if (onFirstLoad) {
@@ -26,9 +32,9 @@ export default dispatch => () => {
     // if redaction is already enabled for some reason (i.e. calling readerControl.enableRedaction() before loading a doc), keep it enabled
 
     if (core.isCreateRedactionEnabled()) {
-      dispatch(actions.enableElement('redactionButton', 1));
+      dispatch(actions.enableElement('redactionToolGroupButton', PRIORITY_ONE));
     } else {
-      dispatch(actions.disableElement('redactionButton', 1));
+      dispatch(actions.disableElement('redactionToolGroupButton', PRIORITY_TWO));
     }
   }
 
@@ -40,8 +46,51 @@ export default dispatch => () => {
     dispatch(actions.setOutlines(outlines));
   });
 
+  const doc = core.getDocument();
+  if (!doc.isWebViewerServerDocument()) {
+    doc.getLayersArray().then(layers => {
+      if (layers.length === 0) {
+        dispatch(actions.disableElement('layersPanel', PRIORITY_ONE));
+        dispatch(actions.disableElement('layersPanelButton', PRIORITY_ONE));
+
+        const state = getState();
+        const activeLeftPanel = selectors.getActiveLeftPanel(state);
+        if (activeLeftPanel === 'layersPanel') {
+          // set the active left panel to another one that's not disabled so that users don't see a blank left panel
+          const nextActivePanel = getLeftPanelDataElements(state).find(
+            dataElement => !selectors.isElementDisabled(state, dataElement),
+          );
+
+          dispatch(actions.setActiveLeftPanel(nextActivePanel));
+        }
+      } else {
+        dispatch(actions.enableElement('layersPanel', PRIORITY_ONE));
+        dispatch(actions.enableElement('layersPanelButton', PRIORITY_ONE));
+        dispatch(actions.setLayers(layers));
+      }
+    });
+  }
+
+  if (doc.getType() === workerTypes.PDF) {
+    dispatch(actions.enableElement('cropToolGroupButton', PRIORITY_ONE));
+  } else {
+    dispatch(actions.disableElement('cropToolGroupButton', PRIORITY_ONE));
+  }
+
   window.readerControl.loadedFromServer = false;
   window.readerControl.serverFailed = false;
 
-  $(document).trigger('documentLoaded');
+  window.docViewer
+    .getAnnotationManager()
+    .getFieldManager()
+    .setPrintHandler(() => {
+      print(
+        store.dispatch,
+        selectors.isEmbedPrintSupported(store.getState()),
+        selectors.getSortStrategy(store.getState()),
+        selectors.getColorMap(store.getState())
+      );
+    });
+
+  fireEvent('documentLoaded');
 };

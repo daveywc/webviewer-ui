@@ -5,16 +5,17 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
   mode: 'production',
-  entry: ['@babel/polyfill', path.resolve(__dirname, 'src')],
+  entry: path.resolve(__dirname, 'src'),
   output: {
     path: path.resolve(__dirname, 'build'),
     filename: 'webviewer-ui.min.js',
-    publicPath: '/',
+    chunkFilename: 'chunks/[name].chunk.js',
+    publicPath: './',
   },
   plugins: [
     new CopyWebpackPlugin([
       {
-        from: './src/index.build.html',
+        from: './src/index.core.html',
         to: '../build/index.html',
       },
       {
@@ -22,12 +23,17 @@ module.exports = {
         to: '../build/i18n',
       },
       {
-        from: './assets/pdftron.ico',
-        to: '../build/assets/pdftron.ico',
+        from: './assets',
+        to: '../build/assets',
+      },
+      {
+        from: './src/configorigin.txt',
+        to: '../build/configorigin.txt',
       },
     ]),
     new MiniCssExtractPlugin({
       filename: 'style.css',
+      chunkFilename: 'chunks/[name].chunk.css'
     }),
     // new BundleAnalyzerPlugin()
   ],
@@ -38,7 +44,16 @@ module.exports = {
         use: {
           loader: 'babel-loader',
           options: {
-            presets: ['@babel/preset-react', '@babel/preset-env'],
+            presets: [
+              '@babel/preset-react',
+              [
+                '@babel/preset-env',
+                {
+                  useBuiltIns: 'entry',
+                  corejs: 3,
+                },
+              ],
+            ],
             plugins: [
               '@babel/plugin-proposal-function-sent',
               '@babel/plugin-proposal-export-namespace-from',
@@ -74,6 +89,21 @@ module.exports = {
       {
         test: /\.svg$/,
         use: ['svg-inline-loader'],
+      },
+      {
+        test: /\.woff(2)?$/,
+        use: [
+          {
+            loader: 'file-loader',
+            options: {
+              name: '[name].[ext]',
+              // this is used to overwrite the publicPath that is specified in the output object,
+              // to make the url of the fonts be relative to the minified style.css
+              publicPath: './assets/fonts',
+              outputPath: '/assets/fonts',
+            },
+          },
+        ],
       },
     ],
   },

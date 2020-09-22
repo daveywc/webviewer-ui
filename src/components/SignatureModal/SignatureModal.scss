@@ -1,90 +1,154 @@
 @import '../../constants/styles';
 @import '../../constants/modal';
 
-$signature-modal-shared-color: #E1E1E3;
-
 .SignatureModal {
   @extend %modal;
-  font-size: 0.9em;
+
+  .tab-list {
+    font-size: 14px; // hack for extra area in the tab list. 13px looks bad.
+  }
+
+  .ColorPalette {
+    margin-bottom: 8px;
+    width: auto;
+  }
 
   .container {
     @extend %modal-shared-container-style;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     border-radius: 4px;
-    box-shadow: 0 2px 16px 0 $signature-modal-shared-color; 
-
-    width: 600px;
-    height: 350px;
+    box-shadow: 0px 0px 3px 0px var(--document-box-shadow);
+    padding: 8px 8px;
+    background: var(--component-background);
 
     @include mobile {
       width: 100%;
-    }
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      padding-top: 24px;
+      padding-bottom: 16px;
+      padding-left: 24px;
+      padding-right: 24px;
 
-    .header {
-      margin: 11px 11px 0px 24px;
-      display: flex;
-      justify-content: flex-end;
-    }
-    
-    .signature {
-      position: relative;
-      border-radius: 4px;
-      border: 1px solid $signature-modal-shared-color;
-      margin: 18px 24px 0px 24px;
-      width: 552px;
-      height: 200px;
-      display: flex;
-
-      @include mobile {
-        margin: 18px 12px 0px 12px;
-        width: calc(100% - 24px);
-      }
-
-      &-canvas {
-        z-index: 1;
+      .swipe-indicator {
+        background: var(--divider);
+        border-radius: 2px;
+        height: 4px;
+        width: 38px;
         position: absolute;
-        width: 100%;
-        height: 100%;
-        cursor: crosshair;
-      }
+        top: 12px;
+        margin-left: auto;
+        margin-right: auto;
+        left: 0;
+        right: 0;
 
-      &-background {
-        position: relative;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: #F8F8F8;
-        flex-grow: 1;
-      }
-
-      &-sign-here {
-        color: $signature-modal-shared-color;
-        font-size: 16px;
-      }
-
-      &-clear {
-        z-index: 2;
-        position: absolute;
-        top: 16px;
-        right: 16px;
-        color: #757575;
-        font-weight: 600;
-        cursor: pointer;
-
-        &.active {
-          color: #00A4E4;
+        @include tablet-and-desktop {
+          display: none;
         }
       }
     }
 
+    .StylePopup {
+      border-radius: 0px;
+      box-shadow: none;
+    }
+
+    .divider-horizontal {
+      width: 100%;
+      height: 1px;
+      margin-bottom: 8px;
+      background: var(--divider);
+    }
+
+    .tab-panel {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      .ColorPalette {
+        display: grid;
+        grid-template-columns: repeat(3,1fr);
+      }
+    }
+
+
+    .tab-list {
+      display: flex;
+      margin-bottom: 16px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      height: 28px;
+      color: var(--text-color);
+      margin: 8px 0;
+      width: 100%;
+      cursor: pointer;
+
+      .tab-options-button {
+        // flex breaks ellipsis text overflow for some reason
+        // display: flex;
+        // justify-content: center;
+        // align-items: center;
+        text-align: center;
+        vertical-align: middle;
+        line-height: 24px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+        flex: 1;
+        border-radius: 0px;
+
+        &:first-child {
+          border-bottom-left-radius: 4px;
+          border-top-left-radius: 4px;
+        }
+
+        &:last-child {
+          border-bottom-right-radius: 4px;
+          border-top-right-radius: 4px;
+        }
+
+        &:hover {
+          background: var(--popup-button-hover);
+        }
+
+        &.selected {
+          background: var(--popup-button-active);
+        }
+      }
+
+      .tab-options-divider {
+        width: 1px;
+        background: var(--divider);
+      }
+    }
+
+    .ActionButton {
+      margin-right: -13px;
+
+      &:hover {
+        background: transparent;
+
+        svg {
+          color: $pdftron-blue;
+        }
+      }
+    }
+
+
     .footer {
       display: flex;
-      margin: 20px 16px;
+      padding-top: 12px;
       align-items: center;
+      justify-content: space-between;
+      width: 100%;
 
       .signature-save {
         position: relative;
-        display: flex;
-        align-items: center;
         margin-left: 8px;
         user-select: none;
 
@@ -104,7 +168,7 @@ $signature-modal-shared-color: #E1E1E3;
           }
 
           &:checked + label:before {
-            background: #00A4E4;
+            background: $pdftron-blue;
             border: 1px solid transparent;
           }
 
@@ -113,38 +177,55 @@ $signature-modal-shared-color: #E1E1E3;
             position: absolute;
             left: 4px;
             top: 9px;
-            background: white;
+            background: #ffffff;
             width: 2px;
             height: 2px;
-            box-shadow: 
-              2px 0 0 white,
-              4px 0 0 white,
-              4px -2px 0 white,
-              4px -4px 0 white,
-              4px -6px 0 white,
-              4px -8px 0 white;
+            box-shadow: 2px 0 0 #ffffff, 4px 0 0 #ffffff, 4px -2px 0 #ffffff,
+              4px -4px 0 #ffffff, 4px -6px 0 #ffffff, 4px -8px 0 #ffffff;
             transform: rotate(45deg);
           }
+        }
+
+        label {
+          display: flex;
+          align-items: center;
+        }
+      }
+
+      .signature-clear {
+        color: var(--secondary-button-text);
+        padding: 0 16px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+
+        &:hover {
+          color: var(--secondary-button-hover);
         }
       }
 
       .signature-create {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        color: #FFFFFF;
-        font-weight: 600;
-        padding: 6px 18px;
-        margin-right: 8px;
-        background: #00A4E4;
-        border-radius: 4px 4px 4px 4px;
-        border: 1px solid #00A4E4;
+        background: var(--primary-button);
+        border-radius: 4px;
+        padding: 0 8px;
         height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        color: var(--primary-button-text);
+        font-weight: bold;
         cursor: pointer;
 
+        @include mobile {
+          height: 40px;
+          width: 128px;
+        }
+
         &:hover {
-          background: #17324C;
-          border: 1px solid #17324C;
+          background: var(--primary-button-hover);
         }
       }
     }

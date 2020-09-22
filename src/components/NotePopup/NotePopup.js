@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { useSelector, useDispatch, shallowEqual } from 'react-redux';
+import useOnClickOutside from 'hooks/useOnClickOutside';
 import { useTranslation } from 'react-i18next';
 
 import Icon from 'components/Icon';
@@ -16,7 +17,7 @@ const propTypes = {
   setIsEditing: PropTypes.func.isRequired,
 };
 
-const NotePopup = ({ annotation, setIsEditing }) => {
+const NotePopup = ({ annotation, setIsEditing, noteIndex }) => {
   const [
     notePopupId,
     isDisabled,
@@ -28,14 +29,22 @@ const NotePopup = ({ annotation, setIsEditing }) => {
       selectors.isElementDisabled(state, 'notePopup'),
       selectors.isElementDisabled(state, 'notePopupEdit'),
       selectors.isElementDisabled(state, 'notePopupDelete'),
+      selectors.isElementDisabled(state, 'notePopupState'),
     ],
     shallowEqual,
   );
   const [canModify, setCanModify] = useState(core.canModify(annotation));
-  const [canModifyContents, setCanModifyContents] = useState(core.canModifyContents(annotation));
+  const [canModifyContents, setCanModifyContents] = useState(
+    core.canModifyContents(annotation),
+  );
   const [t] = useTranslation();
   const dispatch = useDispatch();
   const isOpen = notePopupId === annotation.Id;
+  const popupRef = useRef();
+
+  useOnClickOutside(popupRef, () => {
+    closePopup();
+  });
 
   useEffect(() => {
     const onUpdateAnnotationPermission = () => {
@@ -54,7 +63,8 @@ const NotePopup = ({ annotation, setIsEditing }) => {
       );
   }, [annotation]);
 
-  const togglePopup = () => {
+  const togglePopup = e => {
+    e.stopPropagation();
     if (isOpen) {
       closePopup();
     } else {
@@ -67,7 +77,13 @@ const NotePopup = ({ annotation, setIsEditing }) => {
   };
 
   const handleEdit = () => {
-    setIsEditing(true);
+    const isFreeText = annotation instanceof window.Annotations.FreeTextAnnotation;
+
+    if (isFreeText && core.getAnnotationManager().useFreeTextEditing()) {
+      core.getAnnotationManager().trigger('annotationDoubleClicked', annotation);
+    } else {
+      setIsEditing(true, noteIndex);
+    }
   };
 
   const handleDelete = () => {
@@ -81,20 +97,22 @@ const NotePopup = ({ annotation, setIsEditing }) => {
     <div
       className="NotePopup"
       data-element="notePopup"
-      onMouseDown={e => e.stopPropagation()}
     >
-      <div className="overflow" onClick={togglePopup}>
-        <Icon glyph="ic_overflow_black_24px" />
+      <div
+        className="overflow"
+        onClick={togglePopup}
+      >
+        <Icon glyph="icon-tools-more" />
       </div>
       {isOpen && (
-        <div className="options" onClick={closePopup}>
+        <div ref={popupRef} className="options" onClick={closePopup}>
           {isEditable && (
-            <div data-element="notePopupEdit" onClick={handleEdit}>
+            <div className="option" data-element="notePopupEdit" onClick={handleEdit}>
               {t('action.edit')}
             </div>
           )}
           {isDeletable && (
-            <div data-element="notePopupDelete" onClick={handleDelete}>
+            <div className="option" data-element="notePopupDelete" onClick={handleDelete}>
               {t('action.delete')}
             </div>
           )}

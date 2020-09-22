@@ -9,14 +9,13 @@ import selectors from 'selectors';
 import './ErrorModal.scss';
 
 const ErrorModal = () => {
-  const [message, isDisabled, isOpen, documentPath] = useSelector(
+  const [message, isDisabled, isOpen] = useSelector(
     state => [
       selectors.getErrorMessage(state),
       selectors.isElementDisabled(state, 'errorModal'),
       selectors.isElementOpen(state, 'errorModal'),
-      selectors.getDocumentPath(state),
     ],
-    shallowEqual,
+    shallowEqual
   );
   const dispatch = useDispatch();
   const [t] = useTranslation();
@@ -24,36 +23,26 @@ const ErrorModal = () => {
   useEffect(() => {
     if (isOpen) {
       dispatch(
-        actions.closeElements([
-          'signatureModal',
-          'printModal',
-          'loadingModal',
-          'progressModal',
-        ]),
+        actions.closeElements(['signatureModal', 'printModal', 'loadingModal', 'progressModal'])
       );
     }
   }, [dispatch, isOpen]);
 
   useEffect(() => {
     const onError = error => {
-      if (documentPath.indexOf('file:///') > -1) {
-        console.error(
-          `WebViewer doesn't have access to file URLs because of browser security restrictions. Please see https://www.pdftron.com/documentation/web/guides/basics/troubleshooting-document-loading#not-allowed-to-load-local-resource:-file:`,
-        );
-      }
+      error = error.detail?.message || error.detail || error.message;
 
-      error = error.detail || error.message;
       let errorMessage;
 
       if (typeof error === 'string') {
         errorMessage = error;
 
         // provide a more specific error message
-        if (errorMessage.indexOf('File does not exist') > -1) {
-          errorMessage = t('message.notSupported');
+        if (errorMessage.includes('File does not exist')) {
+          errorMessage = 'message.notSupported';
         }
       } else if (error?.type === 'InvalidPDF') {
-        errorMessage = t('message.badDocument');
+        errorMessage = 'message.badDocument';
       }
 
       if (errorMessage) {
@@ -63,7 +52,9 @@ const ErrorModal = () => {
 
     window.addEventListener('loaderror', onError);
     return () => window.removeEventListener('loaderror', onError);
-  }, [dispatch, documentPath, t]);
+  }, [dispatch]);
+
+  const shouldTranslate = message.startsWith('message.');
 
   return isDisabled ? null : (
     <div
@@ -75,7 +66,7 @@ const ErrorModal = () => {
       })}
       data-element="errorModal"
     >
-      <div className="container">{message}</div>
+      <div className="container">{shouldTranslate ? t(message) : message}</div>
     </div>
   );
 };
