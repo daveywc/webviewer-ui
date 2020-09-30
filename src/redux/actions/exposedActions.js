@@ -103,7 +103,7 @@ export const enableRibbons = () => (dispatch, getState) => {
 };
 
 const isElementDisabled = (state, dataElement) =>
-state.viewer.disabledElements[dataElement]?.disabled;
+  state.viewer.disabledElements[dataElement]?.disabled;
 
 export const allButtonsInGroupDisabled = (state, toolGroup) => {
   const dataElements = Object.values(state.viewer.toolButtonObjects)
@@ -182,13 +182,17 @@ export const setSelectedStampIndex = index => ({
   type: 'SET_SELECTED_STAMP_INDEX',
   payload: { index },
 });
-export const setSelectedSignatureIndex = index => ({
-  type: 'SET_SELECTED_SIGNATURE_INDEX',
+export const setSelectedDisplayedSignatureIndex = index => ({
+  type: 'SET_SELECTED_DISPLAYED_SIGNATURE_INDEX',
   payload: { index },
 });
 export const setSavedSignatures = savedSignatures => ({
   type: 'SET_SAVED_SIGNATURES',
   payload: { savedSignatures },
+});
+export const setDisplayedSignaturesFilterFunction = filterFunction => ({
+  type: 'SET_DISPLAYED_SIGNATURES_FILTER_FUNCTION',
+  payload: { filterFunction },
 });
 export const setLeftPanelWidth = width => ({
   type: 'SET_LEFT_PANEL_WIDTH',
@@ -201,6 +205,14 @@ export const setSearchPanelWidth = width => ({
 export const setNotesPanelWidth = width => ({
   type: 'SET_NOTES_PANEL_WIDTH',
   payload: { width },
+});
+export const setDocumentContainerWidth = width => ({
+  type: 'SET_DOCUMENT_CONTAINER_WIDTH',
+  payload: { width },
+});
+export const setDocumentContainerHeight = height => ({
+  type: 'SET_DOCUMENT_CONTAINER_HEIGHT',
+  payload: { height },
 });
 
 export const enableAllElements = () => ({
@@ -451,10 +463,14 @@ export const setCustomElementOverrides = (dataElement, overrides) => ({
   type: 'SET_CUSTOM_ELEMENT_OVERRIDES',
   payload: { dataElement, overrides },
 });
-export const setActiveTheme = theme => ({
-  type: 'SET_ACTIVE_THEME',
-  payload: { theme },
-});
+export const setActiveTheme = theme => {
+  fireEvent('themeChanged', theme);
+
+  return ({
+    type: 'SET_ACTIVE_THEME',
+    payload: { theme },
+  });
+};
 export const setSearchResults = searchResults => ({
   type: 'SET_SEARCH_RESULTS',
   payload: searchResults,

@@ -137,9 +137,11 @@ class PrintModal extends React.PureComponent {
     this.setState({ pagesToPrint });
   };
 
-  onFocus = () => {
-    this.customPages.current.click();
-    this.onChange();
+  onInputChange = () => {
+    if (!this.customPages.current.checked) {
+      this.customPages.current.click();
+      this.onChange();
+    }
   };
 
   createPagesAndPrint = e => {
@@ -219,7 +221,7 @@ class PrintModal extends React.PureComponent {
         type="text"
         placeholder={t('message.customPrintPlaceholder')}
         aria-label={t('message.customPrintPlaceholder')}
-        onFocus={this.onFocus}
+        onChange={this.onInputChange}
         disabled={isPrinting}
       />
     );
@@ -318,11 +320,13 @@ class PrintModal extends React.PureComponent {
                   </form>
                   <div>
                     <div className="col">
-                      <div>{`${t('option.print.pageQuality')}:`}</div>
-                      <select className="printQualitySelect" onChange={e => this.props.setPrintQuality(Number(e.target.value))} value={this.props.printQuality}>
-                        <option value="2">{`${t('option.print.qualityHigh')}`}</option>
-                        <option value="1">{`${t('option.print.qualityNormal')}`}</option>
-                      </select>
+                      <label>
+                        {`${t('option.print.pageQuality')}:`}
+                        <select className="printQualitySelect" onChange={e => this.props.setPrintQuality(Number(e.target.value))} value={this.props.printQuality}>
+                          <option value="2">{`${t('option.print.qualityHigh')}`}</option>
+                          <option value="1">{`${t('option.print.qualityNormal')}`}</option>
+                        </select>
+                      </label>
                     </div>
                   </div>
                   <div className="total">

@@ -22,6 +22,7 @@ import core from 'core';
 import mentionsManager from 'helpers/MentionsManager';
 import { mapAnnotationToKey, getDataWithKey } from 'constants/map';
 import escapeHtml from 'helpers/escapeHtml';
+import getFillClass from 'helpers/getFillClass';
 import useDidUpdate from 'hooks/useDidUpdate';
 import actions from 'actions';
 import selectors from 'selectors';
@@ -32,7 +33,7 @@ const propTypes = {
   annotation: PropTypes.object.isRequired,
 };
 
-const NoteContent = ({ annotation, isEditing, setIsEditing, noteIndex }) => {
+const NoteContent = ({ annotation, isEditing, setIsEditing, noteIndex, textAreaValue, onTextChange }) => {
   const [
     noteDateFormat,
     iconColor,
@@ -74,7 +75,7 @@ const NoteContent = ({ annotation, isEditing, setIsEditing, noteIndex }) => {
     ) {
       setIsEditing(true, noteIndex);
     }
-  }, [isContentEditable, isNoteEditingTriggeredByAnnotationPopup, isSelected, setIsEditing]);
+  }, [isContentEditable, isNoteEditingTriggeredByAnnotationPopup, isSelected, setIsEditing, noteIndex]);
 
   const renderAuthorName = useCallback(
     annotation => {
@@ -121,9 +122,20 @@ const NoteContent = ({ annotation, isEditing, setIsEditing, noteIndex }) => {
 
   const icon = getDataWithKey(mapAnnotationToKey(annotation)).icon;
   const color = annotation[iconColor]?.toHexString?.();
+  const fillClass = getFillClass(annotation.FillColor);
   const contents = annotation.getContents();
   const numberOfReplies = annotation.getReplies().length;
   const formatNumberOfReplies = Math.min(numberOfReplies, 9);
+
+  // If we  have no textAreaValue, but we have contents
+  // we lost state in our pendingText map from unmounting the notes panel.
+  // Then we need to add the contents to the map so users see text placeholder if the want
+  // to edit the contents.
+  useEffect(() => {
+    if(!textAreaValue && contents) {
+      onTextChange(contents, noteIndex)
+    }
+  }, [textAreaValue, contents, noteIndex])
 
   const header = useMemo(() => (
     <React.Fragment>
@@ -133,7 +145,7 @@ const NoteContent = ({ annotation, isEditing, setIsEditing, noteIndex }) => {
             <div className="num-replies-container">
               <div className="num-replies">{formatNumberOfReplies}</div>
             </div>}
-          <Icon className="type-icon" glyph={icon} color={color} />
+          <Icon className="type-icon" glyph={icon} color={color} fillClass={fillClass} />
         </div>
       }
       <div className="author-and-date">
@@ -164,6 +176,8 @@ const NoteContent = ({ annotation, isEditing, setIsEditing, noteIndex }) => {
             annotation={annotation}
             noteIndex={noteIndex}
             setIsEditing={setIsEditing}
+            textAreaValue={textAreaValue}
+            onTextAreaValueChange={onTextChange}
           />
         ) : (
           contents && (
@@ -172,7 +186,7 @@ const NoteContent = ({ annotation, isEditing, setIsEditing, noteIndex }) => {
         )}
       </div>
     </React.Fragment>
-  ), [isReply, numberOfReplies, formatNumberOfReplies, icon, color, renderAuthorName, annotation, noteDateFormat, isStateDisabled, isSelected, isEditing, setIsEditing, contents, renderContents]);
+  ), [isReply, numberOfReplies, formatNumberOfReplies, icon, color, renderAuthorName, annotation, noteDateFormat, isStateDisabled, isSelected, isEditing, setIsEditing, contents, renderContents, textAreaValue]);
 
 
   return useMemo(
@@ -194,13 +208,14 @@ const ContentArea = ({
   annotation,
   noteIndex,
   setIsEditing,
+  textAreaValue,
+  onTextAreaValueChange,
 }) => {
   const [isMentionEnabled] = useSelector(state => [
     selectors.getIsMentionEnabled(state),
   ]);
   const [t] = useTranslation();
   const textareaRef = useRef();
-  const [ textAreaValue, setTextAreaValue] = useState(annotation.getCustomData('trn-mention')?.contents || annotation.getContents());
   const textValueBeforeChanges = annotation.getCustomData('trn-mention')?.contents || annotation.getContents();
 
   useEffect(() => {
@@ -243,7 +258,7 @@ const ContentArea = ({
           textareaRef.current = el;
         }}
         value={textAreaValue}
-        onChange={setTextAreaValue}
+        onChange={value => onTextAreaValueChange(value, noteIndex)}
         onSubmit={setContents}
         placeholder={`${t('action.comment')}...`}
         aria-label={`${t('action.comment')}...`}
@@ -254,7 +269,7 @@ const ContentArea = ({
           onClick={e => {
             e.stopPropagation();
             setIsEditing(false, noteIndex);
-            setTextAreaValue(textValueBeforeChanges);
+            onTextAreaValueChange(textValueBeforeChanges, noteIndex);
           }}
         >
           {t('action.cancel')}

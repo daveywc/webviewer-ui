@@ -22,6 +22,7 @@
     "fit": "Fit",
     "fitToPage": "Fit to page",
     "fitToWidth": "Fit to width",
+    "more": "More",
     "openFile": "Open file",
     "pagePrev": "Previous page",
     "pageNext": "Next page",
@@ -54,7 +55,10 @@
     "prevResult": "Previous result",
     "nextResult": "Next result",
     "prev": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "startFormEditing": "Start Form Editing",
+    "exitFormEditing": "Exit Form Editing Mode",
+    "exit": "Exit"
   },
   "annotation": {
     "areaMeasurement": "Area",
@@ -160,7 +164,9 @@
     "insertTextHere": "Insert text here",
     "imageSignatureAcceptedFileTypes": "Only {{acceptedFileTypes}} are accepted",
     "enterMeasurement": "Enter measurement between the two points",
+    "errorEnterMeasurement": "The number you have entered is invalid, you can enter values like 7.5 or 7 1/2",
     "linkURLorPage": "Link URL or a Page",
+    "enterReplacementText": "Enter the text you want to replace",
     "sortBy": "Sort by"
   },
   "option": {
@@ -183,6 +189,9 @@
       "StrokeColor": "Stroke",
       "FillColor": "Fill",
       "TextColor": "Text"
+    },
+    "colorPalette": {
+      "colorLabel": "Color"
     },
     "displayMode": {
       "layout": "Page Layout",
@@ -225,6 +234,11 @@
       "caseSensitive": "Case sensitive",
       "wholeWordOnly": "Whole word",
       "wildcard": "Wildcard"
+    },
+    "toolsOverlay": {
+      "currentStamp": "Current Stamp",
+      "currentSignature": "Current Signature",
+      "signatureAltText": "Signature"
     },
     "stampOverlay": {
       "addStamp": "Add New Stamp"

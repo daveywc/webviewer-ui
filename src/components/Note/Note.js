@@ -1,14 +1,16 @@
 import React, { useEffect, useRef, useContext, useState, useCallback } from 'react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import { useSelector, shallowEqual } from 'react-redux';
+import { useSelector, shallowEqual, useDispatch } from 'react-redux';
 
 import NoteContext from 'components/Note/Context';
 import NoteContent from 'components/NoteContent';
 import ReplyArea from 'components/Note/ReplyArea';
 
 import selectors from 'selectors';
+import actions from 'actions';
 import core from 'core';
+import AnnotationNoteConnectorLine from 'components/AnnotationNoteConnectorLine';
 
 import './Note.scss';
 
@@ -23,7 +25,10 @@ const Note = ({ annotation }) => {
   const containerRef = useRef();
   const containerHeightRef = useRef();
   const [isEditingMap, setIsEditingMap] = useState({});
+  const [pendingEditTextMap, setPendingEditTextMap] = useState({});
   const ids = useRef([]);
+  const dispatch = useDispatch();
+  const [replyText, setReplyText] = useState('')
 
   const [
     noteTransformFunction,
@@ -90,6 +95,8 @@ const Note = ({ annotation }) => {
       core.deselectAllAnnotations();
       core.selectAnnotation(annotation);
       core.jumpToAnnotation(annotation);
+      // Need this delay to ensure all other event listeners fire before we open the line
+      setTimeout(() => dispatch(actions.openElement('annotationNoteConnectorLine')), 300);
     }
   };
 
@@ -128,6 +135,16 @@ const Note = ({ annotation }) => {
     [setIsEditingMap],
   );
 
+  const setPendingEditText = useCallback(
+    (pendingText, index) => {
+      setPendingEditTextMap(map => ({
+        ...map,
+        [index]: pendingText,
+      }));
+    },
+    [setPendingEditTextMap],
+  );
+
   return (
     <div
       role="button"
@@ -143,6 +160,8 @@ const Note = ({ annotation }) => {
         isSelected={isSelected}
         setIsEditing={setIsEditing}
         isEditing={isEditingMap[0]}
+        textAreaValue={pendingEditTextMap[0]}
+        onTextChange={setPendingEditText}
       />
       {isSelected && (
         <React.Fragment>
@@ -155,12 +174,15 @@ const Note = ({ annotation }) => {
                 annotation={reply}
                 setIsEditing={setIsEditing}
                 isEditing={isEditingMap[i + 1]}
+                textAreaValue={pendingEditTextMap[i + 1]}
+                onTextChange={setPendingEditText}
               />
             ))}
-            {showReplyArea && <ReplyArea annotation={annotation} />}
+            {showReplyArea && <ReplyArea annotation={annotation} replyText={replyText} setReplyText={setReplyText}/>}
           </div>
         </React.Fragment>
       )}
+      <AnnotationNoteConnectorLine annotation={annotation} noteContainerRef={containerRef}/>
     </div>
   );
 };
