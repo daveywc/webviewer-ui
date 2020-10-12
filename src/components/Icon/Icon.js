@@ -28,7 +28,7 @@ class Icon extends React.PureComponent {
 
   updateSvg() {
     if (this.isInlineSvg()) {
-      var domElement = this.icon.current;
+      const domElement = this.icon.current;
 
       // remove existing svg
       while (domElement.firstChild) {
@@ -49,7 +49,21 @@ class Icon extends React.PureComponent {
   render() {
     const { className = '', color, glyph, fillClass = '', disabled } = this.props;
     const filter = (color && (color === 'rgba(255, 255, 255, 1)' || color === 'rgb(255, 255, 255)')) ? 'drop-shadow(0 0 .5px #333)' : undefined;
-    const svgElement = this.isInlineSvg() ? glyph : require(`../../../assets/icons/${this.props.glyph}.svg`);
+    let svgElement;
+
+    try {
+      svgElement = this.isInlineSvg() ? glyph : require(`../../../assets/icons/${this.props.glyph}.svg`);
+    } catch {
+      svgElement = undefined;
+    }
+
+    const style = {
+      filter
+    };
+
+    if (!disabled) {
+      style.color = (color === 'rgba(0, 0, 0, 0)') ? '#808080' : color
+    }
 
     return (
       <div
@@ -60,7 +74,7 @@ class Icon extends React.PureComponent {
           [fillClass]: true,
           disabled,
         })}
-        style={{ color: (color === 'rgba(0, 0, 0, 0)') ? '#808080' : color, filter }}
+        style={style}
         dangerouslySetInnerHTML={{ __html: svgElement }}
       />
     );
