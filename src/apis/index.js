@@ -75,6 +75,7 @@ import openElement from './openElement';
 import openElements from './openElements';
 import print from './print';
 import printInBackground from './printInBackground';
+import cancelPrint from './cancelPrint';
 import registerTool from './registerTool';
 import removeSearchListener from './removeSearchListener';
 import rotateClockwise from './rotateClockwise';
@@ -154,7 +155,22 @@ import reactElements from './reactElements';
  // Listening to this event
   WebViewer(...).then(function(instance) {
     instance.iframeWindow.addEventListener('themeChanged', e => {
-      console.log(e.detail)
+      const theme = e.detail;
+      console.log(theme);
+    })
+  });
+ */
+
+/**
+ * Triggered when the panels are resized
+ * @name WebViewerInstance#panelResized
+ * @event
+ * @example
+ // Listening to this event
+  WebViewer(...).then(function(instance) {
+    instance.iframeWindow.addEventListener('panelResized', e => {
+      const { element, width } = e.detail;
+      console.log(element, width);
     })
   });
  */
@@ -194,6 +210,7 @@ export default store => {
     openElements: openElements(store),
     print: print(store),
     printInBackground: printInBackground(store),
+    cancelPrint,
     registerTool: registerTool(store),
     removeSearchListener,
     searchText: searchText(store.dispatch),

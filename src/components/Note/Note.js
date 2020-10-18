@@ -20,15 +20,15 @@ const propTypes = {
 
 let currId = 0;
 
-const Note = ({ annotation }) => {
-  const { isSelected, resize } = useContext(NoteContext);
+const Note = ({
+  annotation,
+}) => {
+  const { isSelected, resize, pendingEditTextMap, setPendingEditText, isContentEditable, isDocumentReadOnly } = useContext(NoteContext);
   const containerRef = useRef();
   const containerHeightRef = useRef();
   const [isEditingMap, setIsEditingMap] = useState({});
-  const [pendingEditTextMap, setPendingEditTextMap] = useState({});
   const ids = useRef([]);
   const dispatch = useDispatch();
-  const [replyText, setReplyText] = useState('')
 
   const [
     noteTransformFunction,
@@ -85,16 +85,44 @@ const Note = ({ annotation }) => {
     }
   });
 
+  useEffect(() => {
+    //If this is not a new one, rebuild the isEditing map
+    const pendingText = pendingEditTextMap[annotation.Id]
+    if (pendingText !== '' && isContentEditable && !isDocumentReadOnly) {
+      setIsEditing(true, 0)
+    } else if (isDocumentReadOnly) {
+      setIsEditing(false, 0)
+    }
+  }, [isDocumentReadOnly])
+
   const handleNoteClick = e => {
     // stop bubbling up otherwise the note will be closed
     // due to annotation deselection
     e && e.stopPropagation();
 
     if (!isSelected) {
+      const currSelection = window.getSelection();
+      const focusNode = currSelection.focusNode;
+      const selectStart = currSelection.baseOffset;
+      const selectEnd = currSelection.extentOffset;
+
       customNoteSelectionFunction && customNoteSelectionFunction(annotation);
       core.deselectAllAnnotations();
       core.selectAnnotation(annotation);
       core.jumpToAnnotation(annotation);
+  
+      setTimeout(() => {
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(focusNode);
+
+        range.setStart(focusNode, selectStart);
+        range.setEnd(focusNode, selectEnd);
+
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }, 0);
+
       // Need this delay to ensure all other event listeners fire before we open the line
       setTimeout(() => dispatch(actions.openElement('annotationNoteConnectorLine')), 300);
     }
@@ -113,6 +141,17 @@ const Note = ({ annotation }) => {
   const replies = annotation
     .getReplies()
     .sort((a, b) => a['DateCreated'] - b['DateCreated']);
+
+  useEffect(() => {
+    //Must also restore the isEdit for  any replies, in case someone was editing a
+    //reply when a comment was placed above
+    replies.forEach((reply, index) => {
+      const pendingText = pendingEditTextMap[reply.Id]
+      if ((pendingText !== '' && typeof pendingText !== 'undefined') && isSelected) {
+        setIsEditing(true, 1 + index);
+      }
+    })
+  }, [isSelected]);
 
   const showReplyArea = !Object.values(isEditingMap).some(val => val);
 
@@ -135,16 +174,6 @@ const Note = ({ annotation }) => {
     [setIsEditingMap],
   );
 
-  const setPendingEditText = useCallback(
-    (pendingText, index) => {
-      setPendingEditTextMap(map => ({
-        ...map,
-        [index]: pendingText,
-      }));
-    },
-    [setPendingEditTextMap],
-  );
-
   return (
     <div
       role="button"
@@ -160,7 +189,7 @@ const Note = ({ annotation }) => {
         isSelected={isSelected}
         setIsEditing={setIsEditing}
         isEditing={isEditingMap[0]}
-        textAreaValue={pendingEditTextMap[0]}
+        textAreaValue={pendingEditTextMap[annotation.Id]}
         onTextChange={setPendingEditText}
       />
       {isSelected && (
@@ -174,15 +203,14 @@ const Note = ({ annotation }) => {
                 annotation={reply}
                 setIsEditing={setIsEditing}
                 isEditing={isEditingMap[i + 1]}
-                textAreaValue={pendingEditTextMap[i + 1]}
                 onTextChange={setPendingEditText}
               />
             ))}
-            {showReplyArea && <ReplyArea annotation={annotation} replyText={replyText} setReplyText={setReplyText}/>}
+            {showReplyArea && <ReplyArea annotation={annotation} />}
           </div>
         </React.Fragment>
       )}
-      <AnnotationNoteConnectorLine annotation={annotation} noteContainerRef={containerRef}/>
+      <AnnotationNoteConnectorLine annotation={annotation} noteContainerRef={containerRef} />
     </div>
   );
 };
