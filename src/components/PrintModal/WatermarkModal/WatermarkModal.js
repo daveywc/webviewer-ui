@@ -20,13 +20,13 @@ const DESIRED_HEIGHT = 300;
 const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 24, 30, 36, 48];
 
 const WATERMARK_LOCATIONS = {
-  CENTER: 'Center',
-  TOP_LEFT: 'Top Left',
-  TOP_RIGHT: 'Top Right',
-  TOP_CENTER: 'Top Center',
-  BOT_LEFT: 'Bottom Left',
-  BOT_RIGHT: 'Bottom Right',
-  BOT_CENTER: 'Bottom Center',
+  CENTER: 'center',
+  TOP_LEFT: 'topLeft',
+  TOP_RIGHT: 'topRight',
+  TOP_CENTER: 'topCenter',
+  BOT_LEFT: 'bottomLeft',
+  BOT_RIGHT: 'bottomRight',
+  BOT_CENTER: 'bottomCenter',
 };
 
 const FORM_FIELD_KEYS = {
@@ -264,8 +264,7 @@ class WatermarkModal extends React.PureComponent {
     this.setState({ isColorPaletteVisible: visible });
   };
 
-  onLocationChanged = newLocation => {
-    const key = this.getKeyByValue(WATERMARK_LOCATIONS, newLocation);
+  onLocationChanged = key => {
     const currLocationSettings = {
       ...this.state.locationSettings,
     };
@@ -382,23 +381,22 @@ class WatermarkModal extends React.PureComponent {
                 <div className="watermark-settings">
                   <form id="form" onSubmit={e => e.preventDefault()}>
                     <div className="form-field">
-                      <label for="location">{t(`option.watermark.location`)}</label>
+                      <label htmlFor="location">{t(`option.watermark.location`)}</label>
                       <select
                         id="location"
-                        value={WATERMARK_LOCATIONS[currLocation]}
                         onChange={event => {
                           this.onLocationChanged(event.target.value);
                         }}
                       >
                         {Object.keys(WATERMARK_LOCATIONS).map(key => (
-                          <option key={key}>{WATERMARK_LOCATIONS[key]}</option>
+                          <option key={key} value={key}>{t(`option.watermark.locations.${WATERMARK_LOCATIONS[key]}`)}</option>
                         ))}
                       </select>
                     </div>
 
                     <div className="form-field separator"></div>
                     <div className="form-field">
-                      <label for="textInput">{t(`option.watermark.text`)}</label>
+                      <label htmlFor="textInput">{t(`option.watermark.text`)}</label>
                       <input
                         className="text-input"
                         id="textInput"
@@ -413,7 +411,7 @@ class WatermarkModal extends React.PureComponent {
                       />
                     </div>
                     <div className="form-field">
-                      <label for="fonts">{t(`option.watermark.font`)}</label>
+                      <label htmlFor="fonts">{t(`option.watermark.font`)}</label>
                       <select
                         id="fonts"
                         value={formInfo[FORM_FIELD_KEYS.font]}
@@ -430,7 +428,7 @@ class WatermarkModal extends React.PureComponent {
                       </select>
                     </div>
                     <div className="form-field">
-                      <label for="fontSize">{t(`option.watermark.size`)}</label>
+                      <label htmlFor="fontSize">{t(`option.watermark.size`)}</label>
                       <select
                         id="fontSize"
                         value={formInfo[FORM_FIELD_KEYS.fontSize]}
