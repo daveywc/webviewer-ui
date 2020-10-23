@@ -122,7 +122,7 @@ export const creatingPages = (pagesToPrint, includeComments, includeAnnot, print
 export const printPages = pages => {
   let isCordovaPrinter = window.parent.cordova && window.parent.cordova.plugins.printer;
   let printHandler;
-  if (isCordovaPrinter()) {
+  if (isCordovaPrinter) {
     printHandler = document.createElement('div');
     printHandler.style.display = 'block';
     printHandler.style.height = '100%';
@@ -133,7 +133,7 @@ export const printPages = pages => {
 
   const fragment = document.createDocumentFragment();
   pages.forEach((page, index) => {
-    if (isCordovaPrinter()) {
+    if (isCordovaPrinter) {
       page.style.display = 'block';
       page.style.maxWidth = '100%';
       page.style.maxHeight = '100%';
@@ -149,7 +149,7 @@ export const printPages = pages => {
 
   printHandler.appendChild(fragment);
 
-  if (isCordovaPrinter()) {
+  if (isCordovaPrinter) {
     const html = document.createElement('html');
     html.style.width = '100%';
     html.style.height = '100%';
